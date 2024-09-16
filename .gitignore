@@ -1,2 +1,2 @@
 .env
-.postgres-data/pg_wal
+postgres-data/pg_wal
