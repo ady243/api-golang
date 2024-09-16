@@ -1,11 +1,13 @@
-package  services
+package services
 
 import (
-    "errors" 
- "github.com/ady243/teamup/helpers"
-    "github.com/ady243/teamup/middleware"
-    "github.com/ady243/teamup/models"
-    "gorm.io/gorm"
+	"errors"
+	"time"
+
+	"github.com/ady243/teamup/helpers"
+	"github.com/ady243/teamup/middleware"
+	"github.com/ady243/teamup/models"
+	"gorm.io/gorm"
 )
 
 // AuthService fournit des services d'authentification
@@ -21,20 +23,33 @@ func NewAuthService(db *gorm.DB) *AuthService{
 }
 
 // Register enregistre un nouvel utilisateur
-func (s *AuthService) Register(username, email, password, ProfilePhoto, FavoriteSport,location, Bio string) (models.Users, error) {
+func (s *AuthService) Register(username, email, password, profilePhoto, favoriteSport, location, bio string, birthDate time.Time, role models.Role, skillLevel string, pac, sho, pas, dri, def, phy, matchesPlayed, matchesWon, goalsScored, behaviorScore int) (models.Users, error) {
     hashedPassword, err := helpers.HashPassword(password)
     if err != nil {
         return models.Users{}, err
     }
 
     user := models.Users{
-        Username:     username,
-		Email:        email,
-		Location:   location,
-		ProfilePhoto: ProfilePhoto,
-		Bio:  Bio,
-		FavoriteSport:  FavoriteSport,
-        PasswordHash: hashedPassword,
+        Username:      username,
+        Email:         email,
+        Location:      location,
+        ProfilePhoto:  profilePhoto,
+        Bio:           bio,
+        FavoriteSport: favoriteSport,
+        PasswordHash:  hashedPassword,
+        BirthDate:     birthDate,
+        Role:          role,
+        SkillLevel:    skillLevel,
+        Pac:           pac,
+        Sho:           sho,
+        Pas:           pas,
+        Dri:           dri,
+        Def:           def,
+        Phy:           phy,
+        MatchesPlayed: matchesPlayed,
+        MatchesWon:    matchesWon,
+        GoalsScored:   goalsScored,
+        BehaviorScore: behaviorScore,
     }
 
     if err := s.DB.Create(&user).Error; err != nil {
@@ -43,22 +58,6 @@ func (s *AuthService) Register(username, email, password, ProfilePhoto, Favorite
 
     return user, nil
 }
-// Remove the unused function addInformation
-// func (s *AuthService) addInformation(ProfilePhoto, location, FavoriteSport, Bio string) (models.Users, error) {
-// 	
-// 	user := models.Users{
-// 		ProfilePhoto:  ProfilePhoto,
-// 		Location:      location,
-// 		FavoriteSport: FavoriteSport,
-// 		Bio:           Bio,
-// 	}
-// 
-// 	if err := s.DB.Create(&user).Error; err != nil {
-// 		return models.Users{}, err
-// 	}
-// 
-// 	return user, nil
-// }
 
 // Login authentifie un utilisateur et retourne un token JWT
 func (s *AuthService) Login(email, password string) (string, error) {

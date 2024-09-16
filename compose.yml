@@ -9,8 +9,14 @@ services:
     depends_on:
       - postgres
     networks:
-      - postgres-network  # Add the network for the api service
-
+      - postgres-network  
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: postgres
+      
   postgres:
     image: postgres:latest
     container_name: postgres
@@ -23,8 +29,8 @@ services:
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
     networks:
-      - postgres-network  # Already correct
+      - postgres-network  
 
 networks:
   postgres-network:
-    driver: bridge  # Optional, 'bridge' is the default for user-defined networks
+    driver: bridge  

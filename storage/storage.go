@@ -2,34 +2,45 @@ package storage
 
 import (
     "fmt"
+    "log"
     "os"
     "time"
+
     "gorm.io/driver/postgres"
     "gorm.io/gorm"
-    "log"
 )
 
+var GDB *gorm.DB
+
 func NewConnection() (*gorm.DB, error) {
-    dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-        os.Getenv("DB_HOST"),
-        os.Getenv("DB_PORT"),
-        os.Getenv("DB_USER"),
-        os.Getenv("DB_PASSWORD"),
-        os.Getenv("DB_NAME"),
+    var err error
+    pgPort := os.Getenv("DB_PORT")
+    pgHost := os.Getenv("DB_HOST")
+    pgUser := os.Getenv("DB_USER")
+    pgPassword := os.Getenv("DB_PASSWORD")
+    pgName := os.Getenv("DB_NAME")
+
+    dsn := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable",
+        pgUser,
+        pgPassword,
+        pgHost,
+        pgPort,
+        pgName,
     )
 
-    var db *gorm.DB
-    var err error
-
-    for i := 0; i < 10; i++ {
-        db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-        if err == nil {
-            return db, nil
+        for i := 0; i < 5; i++ {
+            GDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+            if err == nil {
+                break
+            }
+            time.Sleep(10 * time.Second)
         }
-        log.Println("Waiting for database to become available...")
-        time.Sleep(time.Second * 5)
-    }
-
-    log.Fatalf("failed to connect to the database: %v", err)
+        if err != nil {
+            log.Println("Producer: Error Connecting to Database")
+        } else {
+            log.Println("Producer: Connection Opened to Database")
+            return GDB, nil
+        }
     return nil, err
 }
+

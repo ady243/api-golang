@@ -10,7 +10,7 @@ COPY go.mod go.sum ./
 # Download all dependencies
 RUN go mod download
 
-# Copy the source code
+# Copy the source code and wait-for-it.sh
 COPY . .
 
 # Build the application
