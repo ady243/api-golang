@@ -16,6 +16,8 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: postgres
+    volumes:
+      - .:/app
       
   postgres:
     image: postgres:latest
@@ -33,4 +35,4 @@ services:
 
 networks:
   postgres-network:
-    driver: bridge  
+    driver: bridge

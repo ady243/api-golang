@@ -1,6 +1,6 @@
 package helpers
 
-import "github.com/ady243/teamup/models"
+import "github.com/ady243/teamup/internal/models"
 
 type Permission struct {
     CanEdit   bool
