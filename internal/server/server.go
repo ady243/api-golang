@@ -1,18 +1,19 @@
 package server
 
-//make just a little server 
+//make just a little server
 import (
-    "log" 
-    "github.com/ady243/teamup/internal/models"
-    "github.com/ady243/teamup/storage"
-	"github.com/ady243/teamup/internal/services"
+	"log"
+
 	"github.com/ady243/teamup/internal/controllers"
+	"github.com/ady243/teamup/internal/models"
 	"github.com/ady243/teamup/internal/routes"
-    "github.com/gofiber/fiber/v2"
-    "github.com/joho/godotenv"
-    "github.com/gofiber/fiber/v2/middleware/cors"
-    "github.com/gofiber/fiber/v2/middleware/helmet"
-    "github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/ady243/teamup/internal/services"
+	"github.com/ady243/teamup/storage"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/joho/godotenv"
 )
 
 func Run() {
@@ -22,7 +23,7 @@ func Run() {
 	}
 
 	// Connexion à la base de données
-	db, err := storage.NewConnection() 
+	db, err := storage.NewConnection()
 	if err != nil {
 		log.Fatal("could not connect to the database", err)
 	}
@@ -30,17 +31,13 @@ func Run() {
 	err = db.AutoMigrate(
 
 		&models.Users{},
-
-	) 
+	)
 	if err != nil {
 		log.Fatal("could not migrate the database", err)
 	}
 
-
 	authService := services.NewAuthService(db)
 	authController := controllers.NewAuthController(authService)
-
-
 
 	// Initialiser l'application Fiber
 	app := fiber.New()
