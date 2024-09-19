@@ -1,46 +1,52 @@
 package storage
 
 import (
-    "fmt"
-    "log"
-    "os"
-    "time"
+	"fmt"
+	"log"
+	"os"
 
-    "gorm.io/driver/postgres"
-    "gorm.io/gorm"
+	"github.com/go-redis/redis"
+	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 var GDB *gorm.DB
 
 func NewConnection() (*gorm.DB, error) {
-    var err error
-    pgPort := os.Getenv("DB_PORT")
-    pgHost := os.Getenv("DB_HOST")
-    pgUser := os.Getenv("DB_USER")
-    pgPassword := os.Getenv("DB_PASSWORD")
-    pgName := os.Getenv("DB_NAME")
 
-    dsn := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable",
-        pgUser,
-        pgPassword,
-        pgHost,
-        pgPort,
-        pgName,
-    )
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
 
-        for i := 0; i < 5; i++ {
-            GDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-            if err == nil {
-                break
-            }
-            time.Sleep(10 * time.Second)
-        }
-        if err != nil {
-            log.Println("Producer: Error Connecting to Database")
-        } else {
-            log.Println("Producer: Connection Opened to Database")
-            return GDB, nil
-        }
-    return nil, err
+	// Postgres connection string
+	dsn := fmt.Sprintf("host=localhost port=%s user=%s dbname=%s password=%s sslmode=disable",
+		os.Getenv("POSTGRES_PORT"),
+		os.Getenv("POSTGRES_USERNAME"),
+		os.Getenv("POSTGRES_DATABASE"),
+		os.Getenv("POSTGRES_PASSWORD"),
+	)
+
+	// Connect to Postgres using GORM
+	GDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+
+	// Connect to Dragonfly
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("localhost:%s", os.Getenv("DRAGONFLY_PORT")), 
+		Password: "",                                                       
+		DB:       0,                                                        
+	})
+
+	// Check Dragonfly connection
+	if _, err := rdb.Ping().Result(); err != nil {
+		log.Fatalf("failed to connect to Dragonfly: %v", err)
+	}
+
+	fmt.Println("🚀 Connected to Postgres and Redis")
+
+	return GDB, nil
 }
-

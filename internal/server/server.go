@@ -3,6 +3,7 @@ package server
 //make just a little server
 import (
 	"log"
+	"os"
 
 	"github.com/ady243/teamup/internal/controllers"
 	"github.com/ady243/teamup/internal/models"
@@ -51,6 +52,10 @@ func Run() {
 	routes.SetupRoutesAuth(app, authController)
 
 	// Démarrer le serveur
-	log.Fatal(app.Listen(":3003"))
+	port := os.Getenv("API_PORT")
+	if port == "" {
+		port = "1234"
+	}
+	log.Fatal(app.Listen(":" + port))
 
 }

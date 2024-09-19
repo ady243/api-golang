@@ -48,18 +48,29 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	birthDate, err := time.Parse("YYYY-MM-DD", req.BirthDate)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid birth date format. Use YYYY-MM-DD"})
-	}
-
+	// Default role to "Player" if not provided
 	if req.Role == "" {
 		req.Role = "Player"
 	}
-
 	role := models.Role(req.Role)
 
-	user, err := ctrl.AuthService.Register(req.Username, req.Email, req.Password, req.ProfilePhoto, req.FavoriteSport, req.Location, req.Bio, birthDate, role, req.SkillLevel, req.Pac, req.Sho, req.Pas, req.Dri, req.Def, req.Phy, req.MatchesPlayed, req.MatchesWon, req.GoalsScored, req.BehaviorScore)
+	// Only parse birthDate if it's provided
+	var birthDate time.Time
+	if req.BirthDate != "" {
+		var err error
+		birthDate, err = time.Parse("2006-01-02", req.BirthDate)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid birth date format. Use YYYY-MM-DD"})
+		}
+	}
+
+	user, err := ctrl.AuthService.Register(
+		req.Username, req.Email, req.Password, req.ProfilePhoto, req.FavoriteSport,
+		req.Location, req.Bio, &birthDate, role, req.SkillLevel, req.Pac, req.Sho,
+		req.Pas, req.Dri, req.Def, req.Phy, req.MatchesPlayed, req.MatchesWon,
+		req.GoalsScored, req.BehaviorScore,
+	)
+
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
