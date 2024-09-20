@@ -44,3 +44,6 @@ _cgo_export.*
 
 # Autres
 .DS_Store
+
+# variables d'environnement
+.env

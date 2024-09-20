@@ -15,18 +15,20 @@ var GDB *gorm.DB
 
 func NewConnection() (*gorm.DB, error) {
 
-	err := godotenv.Load()
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
 
 	// Postgres connection string
-	dsn := fmt.Sprintf("host=localhost port=%s user=%s dbname=%s password=%s sslmode=disable",
-		os.Getenv("POSTGRES_PORT"),
-		os.Getenv("POSTGRES_USERNAME"),
-		os.Getenv("POSTGRES_DATABASE"),
-		os.Getenv("POSTGRES_PASSWORD"),
-	)
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Europe/Paris",
+    os.Getenv("POSTGRES_HOST"),      
+    os.Getenv("POSTGRES_USER"),
+    os.Getenv("POSTGRES_PASSWORD"),
+    os.Getenv("POSTGRES_DB"),
+    os.Getenv("POSTGRES_PORT"),
+)
+
 
 	// Connect to Postgres using GORM
 	GDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -36,9 +38,7 @@ func NewConnection() (*gorm.DB, error) {
 
 	// Connect to Dragonfly
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("localhost:%s", os.Getenv("DRAGONFLY_PORT")), 
-		Password: "",                                                       
-		DB:       0,                                                        
+		Addr: fmt.Sprintf("%s:%s", os.Getenv("DRAGONFLY_HOST"), os.Getenv("DRAGONFLY_PORT")),
 	})
 
 	// Check Dragonfly connection
