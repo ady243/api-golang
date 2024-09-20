@@ -54,3 +54,4 @@ DRAGONFLY_HOST=dragonfly
 SECRET_KEY=secret
 
 
+# NB: quand vous pushez faites attention à ne pas push les fichiez inutile 
