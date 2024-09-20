@@ -16,6 +16,9 @@ COPY . .
 # Build the application
 RUN go build -o main .
 
+#get all depences
+RUN go mod tidy
+
 # Expose the port the app will run on
 EXPOSE 3003
 
