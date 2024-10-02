@@ -2,7 +2,7 @@ package routes
 
 
 import (
-	"github.com/ady243/teamup/controllers"
+	"github.com/ady243/teamup/internal/controllers"
 		"github.com/gofiber/fiber/v2"
 )
 

@@ -1,2 +1,49 @@
+# Fichier .gitignore pour un projet Go
+
+# Binaires pour les programmes et les plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Fichiers de test
+*.test
+*.test.exe
+
+# Fichiers de sortie
+/out
+
+# Fichiers de postgres-data pour Docker
+/postgres-data/
+
+# Les dépendances
+/vendor/
+
+# Fichiers de rapport de couverture pour Go
+*.out
+
+# Fichiers temporaires
+/tmp/
+
+# Fichiers générés par l'IDE
+.idea/
+*.iml
+
+# Fichiers générés par Go
+*.o
+*.a
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+
+# Fichiers de sauvegarde
+*.bak
+
+# Autres
+.DS_Store
+
+# variables d'environnement
 .env
-postgres-data/
