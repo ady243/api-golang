@@ -42,6 +42,7 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 		MatchesWon    int    `json:"matchesWon"`
 		GoalsScored   int    `json:"goalsScored"`
 		BehaviorScore int    `json:"behaviorScore"`
+		
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -80,19 +81,42 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 
 // LoginHandler gère la requête de connexion d'un utilisateur
 func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
-	var req struct {
-		Email    string `json:"email" binding:"required"`
-		Password string `json:"password" binding:"required"`
-	}
+    var req struct {
+        Email    string `json:"email" binding:"required"`
+        Password string `json:"password" binding:"required"`
+    }
 
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
+    if err := c.BodyParser(&req); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	token, err := ctrl.AuthService.Login(req.Email, req.Password)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
-	}
+    accessToken, refreshToken, err := ctrl.AuthService.Login(req.Email, req.Password)
+    if err != nil {
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"token": token})
+    err = ctrl.AuthService.UpdateRefreshToken(req.Email, refreshToken)
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": accessToken, "refreshToken": refreshToken})
+}
+
+// RefreshHandler gère la demande de rafraîchissement du token d'un utilisateur
+func (ctrl *AuthController) RefreshHandler(c *fiber.Ctx) error {
+    var req struct {
+        RefreshToken string `json:"refreshToken" binding:"required"`
+    }
+
+    if err := c.BodyParser(&req); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    newAccessToken, err := ctrl.AuthService.Refresh(req.RefreshToken)
+    if err != nil {
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": newAccessToken})
 }

@@ -1,6 +1,5 @@
 package server
 
-//make just a little server
 import (
 	"log"
 	"os"
@@ -37,10 +36,15 @@ func Run() {
 		log.Fatal("could not migrate the database", err)
 	}
 
+	//ici c'est pour generer des faux utilisateurs pour tester
+	users := models.GenerateFakeUsers(10)
+	for _, user := range users {
+		db.Create(&user)
+	}
+
 	authService := services.NewAuthService(db)
 	authController := controllers.NewAuthController(authService)
 
-	// Initialiser l'application Fiber
 	app := fiber.New()
 
 	app.Use(helmet.New())

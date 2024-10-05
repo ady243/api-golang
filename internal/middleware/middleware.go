@@ -54,6 +54,24 @@ func ParseToken(tokenString string) (*Claims, error) {
 	return nil, errors.New("invalid token")
 }
 
+// GenerateRefreshToken génère un nouveau refreshToken pour un utilisateur donné
+func GenerateRefreshToken(userID ulid.ULID) (string, error) {
+    secretKey := os.Getenv("SECRET_KEY")
+    if secretKey == "" {
+        return "", errors.New("SECRET_KEY not found")
+    }
+    claims := Claims{
+        UserID: userID,
+        StandardClaims: jwt.StandardClaims{
+            ExpiresAt: time.Now().Add(time.Hour * 72).Unix(), // Durée de vie plus longue pour le refreshToken
+            IssuedAt:  time.Now().Unix(),
+        },
+    }
+
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    return token.SignedString([]byte(secretKey))
+}
+
 // JWTMiddleware vérifie le token JWT dans les requêtes HTTP
 func JWTMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

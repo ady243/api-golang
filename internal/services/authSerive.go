@@ -57,6 +57,7 @@ func (s *AuthService) Register(username, email, password, profilePhoto, favorite
 		MatchesWon:    matchesWon,
 		GoalsScored:   goalsScored,
 		BehaviorScore: behaviorScore,
+	
 	}
 
 	if err := s.DB.Create(&user).Error; err != nil {
@@ -66,23 +67,61 @@ func (s *AuthService) Register(username, email, password, profilePhoto, favorite
 	return user, nil
 }
 
-// Login authentifie un utilisateur et retourne un token JWT
-func (s *AuthService) Login(email, password string) (string, error) {
-	var user models.Users
-	if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
-		return "", err
-	}
+// Login authentifie un utilisateur et retourne un token JWT et un refreshToken
+func (s *AuthService) Login(email, password string) (string, string, error) {
+    var user models.Users
+    if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
+        return "", "", err
+    }
 
-	if !helpers.CheckPasswordHash(password, user.PasswordHash) {
-		return "", ErrInvalidCredentials
-	}
+    if !helpers.CheckPasswordHash(password, user.PasswordHash) {
+        return "", "", ErrInvalidCredentials
+    }
 
-	token, err := middlewares.GenerateToken(user.ID)
-	if err != nil {
-		return "", err
-	}
+    accessToken, err := middlewares.GenerateToken(user.ID)
+    if err != nil {
+        return "", "", err
+    }
 
-	return token, nil
+    refreshToken, err := middlewares.GenerateRefreshToken(user.ID)
+    if err != nil {
+        return "", "", err
+    }
+
+    return accessToken, refreshToken, nil
+}
+
+// Refresh génère un nouveau accessToken à partir d'un refreshToken valide
+func (s *AuthService) Refresh(refreshToken string) (string, error) {
+    claims, err := middlewares.ParseToken(refreshToken)
+    if err != nil {
+        return "", err
+    }
+
+    if claims.ExpiresAt < time.Now().Unix() {
+        return "", errors.New("refresh token expired")
+    }
+
+    accessToken, err := middlewares.GenerateToken(claims.UserID)
+    if err != nil {
+        return "", err
+    }
+
+    return accessToken, nil
+}
+
+// UpdateRefreshToken met à jour le token de rafraîchissement pour un utilisateur spécifique
+func (s *AuthService) UpdateRefreshToken(email string, refreshToken string) error {
+    var user models.Users
+    if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
+        return err
+    }
+    user.RefreshToken = refreshToken
+    if err := s.DB.Save(&user).Error; err != nil {
+        return err
+    }
+
+    return nil
 }
 
 // Erreurs spécifiques pour le service
