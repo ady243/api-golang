@@ -30,8 +30,8 @@ func GenerateFakeUser() Users {
 
 	return Users{
 		ID:            ulid.Make().String(),
-		Username:      "user" + randomString(5),       // Shorter username
-		Email:         randomString(5) + "@temUp.com", // Shorter email prefix
+		Username:      "user" + randomString(5),
+		Email:         randomString(5) + "@temUp.com",
 		PasswordHash:  randomString(12),
 		UpdatedAt:     now,
 		DeletedAt:     nil,
