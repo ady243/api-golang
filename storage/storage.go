@@ -29,18 +29,18 @@ func NewConnection() (*gorm.DB, error) {
 		os.Getenv("POSTGRES_PORT"),
 	)
 
-	// Connect to Postgres using GORM
+	// On fait la connection avec la base de données
 	GDB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 
-	// Connect to Dragonfly
+	// On fait la connection avec Redis & dragonfly
 	rdb := redis.NewClient(&redis.Options{
 		Addr: fmt.Sprintf("%s:%s", os.Getenv("DRAGONFLY_HOST"), os.Getenv("DRAGONFLY_PORT")),
 	})
 
-	// Check Dragonfly connection
+	// On fait la connection avec Redis
 	if _, err := rdb.Ping().Result(); err != nil {
 		log.Fatalf("failed to connect to Dragonfly: %v", err)
 	}

@@ -63,7 +63,7 @@ func GenerateRefreshToken(userID ulid.ULID) (string, error) {
     claims := Claims{
         UserID: userID,
         StandardClaims: jwt.StandardClaims{
-            ExpiresAt: time.Now().Add(time.Hour * 72).Unix(), // Durée de vie plus longue pour le refreshToken
+            ExpiresAt: time.Now().Add(time.Hour * 72).Unix(), 
             IssuedAt:  time.Now().Unix(),
         },
     }
