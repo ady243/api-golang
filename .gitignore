@@ -47,3 +47,6 @@ _cgo_export.*
 
 # variables d'environnement
 .env
+
+# Autre
+/postgres-data/

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/ady243/teamup/internal/models"
@@ -70,8 +71,13 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Organizer not found"})
 	}
 
+	t := time.Now()
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0) // Utiliser une source d'entropie
+	matchID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
+
 	// Initialiser les valeurs pour le modèle Matches
 	match := &models.Matches{
+		ID:              matchID,
 		OrganizerID:     user.ID,
 		Description:     req.Description, // Assign pointer directly
 		MatchDate:       matchDate,
