@@ -29,7 +29,7 @@ func (s *MatchService) CreateMatch(match *models.Matches) error {
 }
 
 // GetMatchByID récupère un match par son ID
-func (s *MatchService) GetMatchByID(matchID ulid.ULID) (*models.Matches, error) {
+func (s *MatchService) GetMatchByID(matchID string) (*models.Matches, error) {
 	var match models.Matches
 	if err := s.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

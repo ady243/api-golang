@@ -111,7 +111,7 @@ func (ctrl *MatchController) GetMatchByIDHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
 	}
 
-	match, err := ctrl.MatchService.GetMatchByID(matchID)
+	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
 	}
@@ -140,7 +140,7 @@ func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	match, err := ctrl.MatchService.GetMatchByID(matchID)
+	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
 	}
