@@ -2,8 +2,6 @@ package models
 
 import (
 	"time"
-
-	"github.com/oklog/ulid/v2"
 )
 
 type Status string
@@ -15,10 +13,10 @@ const (
 )
 
 type Matches struct {
-	ID              ulid.ULID  `json:"id" gorm:"primaryKey,type:varchar(26)"`   // ID du match
-	OrganizerID     ulid.ULID  `json:"organizer_id" gorm:"not null"`            // Référence vers l'ID de l'organisateur (Users.id)
+	ID              string     `json:"id" gorm:"primaryKey;type:varchar(26)"`   // ID du match
+	OrganizerID     string     `json:"organizer_id" gorm:"not null"`            // Référence vers l'ID de l'organisateur (Users.id)
 	Organizer       Users      `json:"organizer" gorm:"foreignKey:OrganizerID"` // Définition de la clé étrangère vers Users
-	RefereeID       *ulid.ULID `json:"referee_id" gorm:"null"`                  // Référence vers l'ID de l'arbitre, nullable (Users.id)
+	RefereeID       *string    `json:"referee_id" gorm:"null"`                  // Référence vers l'ID de l'arbitre, nullable (Users.id)
 	Referee         *Users     `json:"referee" gorm:"foreignKey:RefereeID"`     // Clé étrangère vers Users, nullable
 	Description     *string    `json:"description" gorm:"null"`                 // Description du match, nullable
 	MatchDate       time.Time  `json:"date" gorm:"not null"`                    // Date du match

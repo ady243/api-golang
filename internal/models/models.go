@@ -2,8 +2,6 @@ package models
 
 import (
 	"time"
-
-	"github.com/oklog/ulid/v2"
 )
 
 type Role string
@@ -15,7 +13,7 @@ const (
 )
 
 type Users struct {
-	ID           ulid.ULID  `json:"id" gorm:"primaryKey,type:varchar(26)"`
+	ID           string     `json:"id" gorm:"primaryKey,type:varchar(26)"`
 	Username     string     `json:"username"`
 	Email        string     `json:"email" gorm:"unique"`
 	PasswordHash string     `json:"password_hash"`
