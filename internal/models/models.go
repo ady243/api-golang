@@ -13,7 +13,7 @@ const (
 )
 
 type Users struct {
-	ID           string     `json:"id" gorm:"primaryKey,type:varchar(26)"`
+	ID           string     `json:"id" gorm:"primaryKey;type:varchar(26)"`
 	Username     string     `json:"username"`
 	Email        string     `json:"email" gorm:"unique"`
 	PasswordHash string     `json:"password_hash"`
@@ -38,4 +38,6 @@ type Users struct {
 	MatchesWon    int `json:"matches_won"`
 	GoalsScored   int `json:"goals_scored"`
 	BehaviorScore int `json:"behavior_score"`
+
+	RefreshToken string `json:"refresh_token"`
 }

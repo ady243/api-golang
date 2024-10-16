@@ -54,4 +54,20 @@ DRAGONFLY_HOST=dragonfly
 SECRET_KEY=secret
 
 
-# NB: quand vous pushez faites attention à ne pas push les fichiez inutile 
+# NB: quand vous pushez faites attention à ne pas push les fichiez inutile
+
+# Pour créer un match 
+
+- Route : `/api/matches/`
+- **Authorization** : Nécessite un token utilisateur dans l'en-tête `Authorization` (Bearer Token).
+- Modèle de données du JSON à envoyer : 
+```json
+{
+    "organizer_id": "string",
+    "referee_id": "string", // optionnel
+    "description": "string", // optionnel
+    "match_date": "YYYY-MM-DD",
+    "match_time": "HH:MM",
+    "address": "string",
+    "number_of_players": integer
+}
