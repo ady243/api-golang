@@ -79,6 +79,20 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(user)
 }
 
+
+// UserHandler gère la requête pour récupérer les informations de l'utilisateur connecté
+func (ctrl *AuthController) UserHandler(c *fiber.Ctx) error {
+    userID := c.Locals("userID").(string) 
+
+    user, err := ctrl.AuthService.GetUserByID(userID)
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    return c.Status(fiber.StatusOK).JSON(user)
+}
+
+
 // LoginHandler gère la requête de connexion d'un utilisateur
 func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
     var req struct {
@@ -102,6 +116,7 @@ func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
 
     return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": accessToken, "refreshToken": refreshToken})
 }
+
 
 // RefreshHandler gère la demande de rafraîchissement du token d'un utilisateur
 func (ctrl *AuthController) RefreshHandler(c *fiber.Ctx) error {

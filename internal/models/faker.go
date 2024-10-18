@@ -16,7 +16,7 @@ func randomInt(min, max int) int {
 }
 
 func randomString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyz"
+	const charset = "abcdefghijklmnop" + "qrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, length)
 	for i := range b {
 		b[i] = charset[rand.Intn(len(charset))]
@@ -30,8 +30,8 @@ func GenerateFakeUser() Users {
 
 	return Users{
 		ID:            ulid.Make().String(),
-		Username:      "user" + randomString(5),       // Shorter username
-		Email:         randomString(5) + "@temUp.com", // Shorter email prefix
+		Username:      "user" + randomString(5),
+		Email:         randomString(5) + "@temUp.com",
 		PasswordHash:  randomString(12),
 		UpdatedAt:     now,
 		DeletedAt:     nil,
@@ -56,9 +56,14 @@ func GenerateFakeUser() Users {
 }
 
 func GenerateFakeUsers(count int) []Users {
+	if count >= 10 {
+		count = 10
+	}
 	users := make([]Users, count)
-	for i := 0; i < count; i++ {
+	i := 0
+	for i < count {
 		users[i] = GenerateFakeUser()
+		i += 1
 	}
 	return users
 }
