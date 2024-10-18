@@ -98,6 +98,15 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
     return accessToken, refreshToken, nil
 }
 
+func(s *AuthService) GetUserByID(id string) (models.Users, error) {
+    var user models.Users
+    if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
+        return models.Users{}, err
+    }
+
+    return user, nil
+}
+
 // Refresh génère un nouveau accessToken à partir d'un refreshToken valide
 func (s *AuthService) Refresh(refreshToken string) (string, error) {
     claims, err := middlewares.ParseToken(refreshToken)
