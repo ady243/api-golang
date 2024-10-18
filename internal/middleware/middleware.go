@@ -18,6 +18,7 @@ type Claims struct {
 
 // GenerateToken génère un nouveau JWT pour un utilisateur donné
 func GenerateToken(userID ulid.ULID) (string, error) {
+	// can panic if SECRET_KEY is not set
     secretKey := os.Getenv("SECRET_KEY")
     if secretKey == "" {
         return "", errors.New("SECRET_KEY not found")
@@ -86,6 +87,6 @@ func JWTMiddleware(c *fiber.Ctx) error {
         return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
     }
 
-    c.Locals("userID", claims.UserID)
+    c.Locals("userID", claims.UserID.String()) 
     return c.Next()
 }
