@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/ady243/teamup/internal/controllers"
+	"github.com/ady243/teamup/internal/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -14,8 +15,9 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 
 func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController) {
 	api := app.Group("/api/matches")
-	api.Post("/", controller.CreateMatchHandler)      // Créer un nouveau match
-	api.Get("/:id", controller.GetMatchByIDHandler)   // Récupérer un match par ID
-	api.Put("/:id", controller.UpdateMatchHandler)    // Mettre à jour un match existant
-	api.Delete("/:id", controller.DeleteMatchHandler) // Supprimer un match par ID
+	api.Post("/", controller.CreateMatchHandler)
+	api.Get("/:id", controller.GetMatchByIDHandler)
+	api.Use(middlewares.JWTMiddleware2)
+	api.Put("/:id", controller.UpdateMatchHandler)
+	api.Delete("/:id", controller.DeleteMatchHandler)
 }

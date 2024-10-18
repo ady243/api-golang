@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"os"
 	"time"
+
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gofiber/fiber/v2"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -56,20 +58,20 @@ func ParseToken(tokenString string) (*Claims, error) {
 
 // GenerateRefreshToken génère un nouveau refreshToken pour un utilisateur donné
 func GenerateRefreshToken(userID ulid.ULID) (string, error) {
-    secretKey := os.Getenv("SECRET_KEY")
-    if secretKey == "" {
-        return "", errors.New("SECRET_KEY not found")
-    }
-    claims := Claims{
-        UserID: userID,
-        StandardClaims: jwt.StandardClaims{
-            ExpiresAt: time.Now().Add(time.Hour * 72).Unix(), 
-            IssuedAt:  time.Now().Unix(),
-        },
-    }
+	secretKey := os.Getenv("SECRET_KEY")
+	if secretKey == "" {
+		return "", errors.New("SECRET_KEY not found")
+	}
+	claims := Claims{
+		UserID: userID,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+			IssuedAt:  time.Now().Unix(),
+		},
+	}
 
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    return token.SignedString([]byte(secretKey))
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secretKey))
 }
 
 // JWTMiddleware vérifie le token JWT dans les requêtes HTTP
@@ -93,4 +95,27 @@ func JWTMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// JWTMiddleware vérifie le token JWT dans les requêtes HTTP pour Fiber
+func JWTMiddleware2(c *fiber.Ctx) error {
+	// Récupérer l'en-tête Authorization
+	tokenString := c.Get("Authorization")
+	if tokenString == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
+	}
+
+	// Supprimer le préfixe "Bearer " si nécessaire
+	tokenString = tokenString[len("Bearer "):]
+
+	// Vérifier et analyser le token JWT
+	claims, err := ParseToken(tokenString)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
+	}
+
+	// Ajouter les claims dans le contexte de la requête
+	c.Locals("user_id", claims.UserID.String())
+
+	return c.Next()
 }

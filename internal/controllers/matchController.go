@@ -127,13 +127,17 @@ func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
 	}
 
+	// Récupérer l'ID de l'utilisateur connecté via le middleware JWT
+	userID := c.Locals("user_id").(string)
+
 	var req struct {
-		Description     *string `json:"description"` // Change to pointer
+		RefereeID       *string `json:"referee_id"`
+		Description     *string `json:"description"`
 		MatchDate       string  `json:"match_date"`
 		MatchTime       string  `json:"match_time"`
 		Address         string  `json:"address"`
 		NumberOfPlayers int     `json:"number_of_players"`
-		Status          *string `json:"status"` // Change to pointer
+		Status          *string `json:"status"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -143,6 +147,21 @@ func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
+	}
+
+	// Vérifier si l'utilisateur connecté est l'organisateur du match
+	if match.OrganizerID != userID {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to update this match"})
+	}
+
+	// Mise à jour des champs du match si les données sont fournies
+	if req.RefereeID != nil {
+		refereeID, err := ulid.Parse(*req.RefereeID)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid referee ID"})
+		}
+		refereeIDStr := refereeID.String()
+		match.RefereeID = &refereeIDStr
 	}
 
 	if req.Description != nil {
@@ -185,6 +204,19 @@ func (ctrl *MatchController) DeleteMatchHandler(c *fiber.Ctx) error {
 	matchID, err := ulid.Parse(id)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+	}
+
+	// Récupérer l'ID de l'utilisateur connecté via le middleware JWT
+	userID := c.Locals("user_id").(string)
+
+	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
+	}
+
+	// Vérifier si l'utilisateur connecté est l'organisateur du match
+	if match.OrganizerID != userID {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to delete this match"})
 	}
 
 	if err := ctrl.MatchService.DeleteMatch(matchID); err != nil {
