@@ -188,7 +188,7 @@ func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 		match.NumberOfPlayers = req.NumberOfPlayers
 	}
 	if req.Status != nil {
-		match.Status = models.Status(*req.Status) // Cast to Status type
+		match.Status = models.Status(*req.Status)
 	}
 
 	if err := ctrl.MatchService.UpdateMatch(match); err != nil {
@@ -200,28 +200,32 @@ func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 
 func (ctrl *MatchController) DeleteMatchHandler(c *fiber.Ctx) error {
 	id := c.Params("id")
+	log.Println("Match ID:", id)
 
+	// Parse l'ID du match
 	matchID, err := ulid.Parse(id)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
 	}
 
-	// Récupérer l'ID de l'utilisateur connecté via le middleware JWT
+	// Récupère l'ID de l'utilisateur connecté
 	userID := c.Locals("user_id").(string)
 
+	// Récupère le match à partir de son ID
 	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
 	}
 
-	// Vérifier si l'utilisateur connecté est l'organisateur du match
+	// Vérifie si l'utilisateur connecté est l'organisateur du match
 	if match.OrganizerID != userID {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to delete this match"})
 	}
 
-	if err := ctrl.MatchService.DeleteMatch(matchID); err != nil {
+	// Effectue la suppression douce via le service
+	if err := ctrl.MatchService.DeleteMatch(id); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.SendStatus(fiber.StatusNoContent) // 204 No Content
 }

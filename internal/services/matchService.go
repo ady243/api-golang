@@ -2,9 +2,9 @@ package services
 
 import (
 	"errors"
+	"time"
 
 	"github.com/ady243/teamup/internal/models"
-	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
 
@@ -49,8 +49,8 @@ func (s *MatchService) UpdateMatch(match *models.Matches) error {
 }
 
 // DeleteMatch supprime un match par son ID (soft delete)
-func (s *MatchService) DeleteMatch(matchID ulid.ULID) error {
-	if err := s.DB.Where("id = ?", matchID).Delete(&models.Matches{}).Error; err != nil {
+func (s *MatchService) DeleteMatch(matchID string) error {
+	if err := s.DB.Model(&models.Matches{}).Where("id = ?", matchID).Update("deleted_at", time.Now()).Error; err != nil {
 		return err
 	}
 	return nil
