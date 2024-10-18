@@ -47,7 +47,9 @@ func Run() {
 
 	app := fiber.New()
 
-	app.Use(helmet.New())
+	app.Use(helmet.New(
+		
+	))
 
 	app.Use(cors.New())
 
