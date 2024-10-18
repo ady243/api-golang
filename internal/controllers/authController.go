@@ -92,6 +92,54 @@ func (ctrl *AuthController) UserHandler(c *fiber.Ctx) error {
     return c.Status(fiber.StatusOK).JSON(user)
 }
 
+func(ctrl *AuthController) UserUpdate(c* fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	var req struct {
+		Username string `json:"username"`
+		Email string `json:"email"`
+		Password string `json:"password"`
+		ProfilePhoto string `json:"profilePhoto"`
+		FavoriteSport string `json:"favoriteSport"`
+		Bio string `json:"bio"`
+		Location string `json:"location"`
+		BirthDate string `json:"birthDate"`
+		Role string `json:"role"`
+		SkillLevel string `json:"skillLevel"`
+		Pac int `json:"pac"`
+		Sho int `json:"sho"`
+		Pas int `json:"pas"`
+		Dri int `json:"dri"`
+		Def int `json:"def"`
+		Phy int `json:"phy"`
+		MatchesPlayed int `json:"matchesPlayed"`
+		MatchesWon int `json:"matchesWon"`
+		GoalsScored int `json:"goalsScored"`
+		BehaviorScore int `json:"behaviorScore"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	var birthDate time.Time
+	if req.BirthDate != "" {
+		var err error
+		birthDate, err = time.Parse("2006-01-02", req.BirthDate)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid birth date format. Use YYYY-MM-DD"})
+		}
+	}
+
+	role := models.Role(req.Role)
+
+	user, err := ctrl.AuthService.UpdateUser(userID, req.Username, req.Email, req.Password, req.ProfilePhoto, req.FavoriteSport, req.Location, req.Bio, &birthDate, role, req.SkillLevel, req.Pac, req.Sho, req.Pas, req.Dri, req.Def, req.Phy, req.MatchesPlayed, req.MatchesWon, req.GoalsScored, req.BehaviorScore)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(user)
+}
+
 
 // LoginHandler gère la requête de connexion d'un utilisateur
 func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
