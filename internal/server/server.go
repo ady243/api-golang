@@ -64,6 +64,7 @@ func Run() {
 	routes.SetupRoutesMatches(app, matchController)
 	routes.SetupRoutesMatchePlayers(app, matchPlayersController)
 
+
 	// Démarrer le serveur
 	port := os.Getenv("API_PORT")
 	if port == "" {
