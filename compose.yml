@@ -30,7 +30,7 @@ services:
       - "${POSTGRES_PORT}:${POSTGRES_PORT}"
     restart: unless-stopped
     volumes:
-      - ./postgres-data:/var/lib/postgresql/data
+      - postgres-test:/var/lib/postgresql/data
     networks:
       - postgres-network  
 
@@ -55,6 +55,7 @@ services:
 
 volumes:
   dragonflydata:
+  postgres-test: { }
 
 networks:
   postgres-network:
