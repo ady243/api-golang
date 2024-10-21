@@ -3,34 +3,46 @@ package services
 import (
 	"errors"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/ady243/teamup/helpers"
 	middlewares "github.com/ady243/teamup/internal/middleware"
 	"github.com/ady243/teamup/internal/models"
 	"github.com/oklog/ulid/v2"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"gorm.io/gorm"
 )
 
 // AuthService fournit des services d'authentification
 type AuthService struct {
-	DB *gorm.DB
-}
-
-// Récupère un utilisateur par son ID
-func (s *AuthService) GetUserByID(userID string) (*models.Users, error) {
-	var user models.Users
-	if err := s.DB.First(&user, "id = ?", userID).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
+	DB                *gorm.DB
+	GoogleOauthConfig *oauth2.Config
 }
 
 // ici on crée une nouvelle instance de AuthService
 func NewAuthService(db *gorm.DB) *AuthService {
-	return &AuthService{
-		DB: db,
+	googleOauthConfig := &oauth2.Config{
+		ClientID:    os.Getenv("GOOGLE_CLIENT_ID"),
+		RedirectURL: os.Getenv("GOOGLE_REDIRECT_URI"),
+		Scopes:      []string{"https://www.googleapis.com/auth/userinfo.email"},
+		Endpoint:    google.Endpoint,
 	}
+
+	return &AuthService{
+		DB:                db,
+		GoogleOauthConfig: googleOauthConfig,
+	}
+}
+
+// GetUserByEmail recherche un utilisateur par email
+func (s *AuthService) GetUserByEmail(email string) (models.Users, error) {
+	var user models.Users
+	if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		return models.Users{}, err
+	}
+	return user, nil
 }
 
 // Register enregistre un nouvel utilisateur
@@ -106,16 +118,16 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 	return accessToken, refreshToken, nil
 }
 
-func(s *AuthService) GetUserByID(id string) (models.Users, error) {
-    var user models.Users
-    if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
-        return models.Users{}, err
-    }
+func (s *AuthService) GetUserByID(id string) (models.Users, error) {
+	var user models.Users
+	if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
+		return models.Users{}, err
+	}
 
-    return user, nil
+	return user, nil
 }
 
-//update user
+// UpdateUser met à jour les informations d'un utilisateur
 func (s *AuthService) UpdateUser(id, username, email, password, profilePhoto, favoriteSport, location, bio string, birthDate *time.Time, role models.Role, skillLevel string, pac, sho, pas, dri, def, phy, matchesPlayed, matchesWon, goalsScored, behaviorScore int) (models.Users, error) {
     var user models.Users
     if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
@@ -135,7 +147,6 @@ func (s *AuthService) UpdateUser(id, username, email, password, profilePhoto, fa
         }
         user.PasswordHash = hashedPassword
     }
-
     if profilePhoto != "" {
         user.ProfilePhoto = profilePhoto
     }

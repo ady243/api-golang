@@ -77,7 +77,7 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 	}
 
 	t := time.Now()
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0) // Utiliser une source d'entropie
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0) 
 	matchID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
 	// Initialiser les valeurs pour le modèle Matches
