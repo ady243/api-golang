@@ -14,29 +14,34 @@ import (
 
 type MatchController struct {
 	MatchService *services.MatchService
+	AuthService  *services.AuthService
 	DB           *gorm.DB
 }
 
-func NewMatchController(matchService *services.MatchService, db *gorm.DB) *MatchController {
+func NewMatchController(matchService *services.MatchService, authService *services.AuthService, db *gorm.DB) *MatchController {
 	return &MatchController{
 		MatchService: matchService,
+		AuthService:  authService,
 		DB:           db,
 	}
 }
 
-func (ctrl *MatchController) GetUserByID(userID string) (*models.Users, error) {
-	var user models.Users
-	if err := ctrl.DB.First(&user, "id = ?", userID).Error; err != nil {
-		return nil, err
+func (ctrl *MatchController) GetAllMatchesHandler(c *fiber.Ctx) error {
+	// Appelle le service pour récupérer tous les matchs
+	matches, err := ctrl.MatchService.GetAllMatches()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not retrieve matches"})
 	}
-	return &user, nil
+
+	// Retourne les matchs en réponse
+	return c.Status(fiber.StatusOK).JSON(matches)
 }
 
 func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 	var req struct {
 		OrganizerID     string  `json:"organizer_id" binding:"required"`
-		RefereeID       *string `json:"referee_id"`  // Change to pointer
-		Description     *string `json:"description"` // Change to pointer
+		RefereeID       *string `json:"referee_id"`
+		Description     *string `json:"description"`
 		MatchDate       string  `json:"match_date" binding:"required"`
 		MatchTime       string  `json:"match_time" binding:"required"`
 		Address         string  `json:"address" binding:"required"`
@@ -66,7 +71,7 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 	}
 
 	// Vérifie si l'utilisateur existe avec l'ULID parsé
-	user, err := ctrl.GetUserByID(organizerID.String())
+	user, err := ctrl.AuthService.GetUserByID(organizerID.String())
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Organizer not found"})
 	}
@@ -79,21 +84,21 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 	match := &models.Matches{
 		ID:              matchID,
 		OrganizerID:     user.ID,
-		Description:     req.Description, // Assign pointer directly
+		Description:     req.Description,
 		MatchDate:       matchDate,
 		MatchTime:       matchTime,
 		Address:         req.Address,
 		NumberOfPlayers: req.NumberOfPlayers,
-		Status:          models.Upcoming, // Using the defined constant
+		Status:          models.Upcoming,
 	}
 
 	if req.RefereeID != nil {
-		refereeID, err := ulid.Parse(*req.RefereeID) // Dereference pointer
+		refereeID, err := ulid.Parse(*req.RefereeID)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid referee ID"})
 		}
-		refereeIDStr := refereeID.String() // Convert to string
-		match.RefereeID = &refereeIDStr    // Assign pointer to the string
+		refereeIDStr := refereeID.String()
+		match.RefereeID = &refereeIDStr
 	}
 
 	if err := ctrl.MatchService.CreateMatch(match); err != nil {

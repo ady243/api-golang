@@ -28,6 +28,15 @@ func (s *MatchService) CreateMatch(match *models.Matches) error {
 	return nil
 }
 
+// Méthode pour récupérer tous les matchs
+func (s *MatchService) GetAllMatches() ([]models.Matches, error) {
+	var matches []models.Matches
+	if err := s.DB.Find(&matches).Error; err != nil {
+		return nil, err
+	}
+	return matches, nil
+}
+
 // GetMatchByID récupère un match par son ID
 func (s *MatchService) GetMatchByID(matchID string) (*models.Matches, error) {
 	var match models.Matches

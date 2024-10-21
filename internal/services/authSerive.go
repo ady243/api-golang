@@ -1,101 +1,109 @@
 package services
 
 import (
-    "errors"
-    "math/rand"
-    "time"
+	"errors"
+	"math/rand"
+	"time"
 
-    "github.com/ady243/teamup/helpers"
-    middlewares "github.com/ady243/teamup/internal/middleware"
-    "github.com/ady243/teamup/internal/models"
-    "github.com/oklog/ulid/v2"
-    "gorm.io/gorm"
+	"github.com/ady243/teamup/helpers"
+	middlewares "github.com/ady243/teamup/internal/middleware"
+	"github.com/ady243/teamup/internal/models"
+	"github.com/oklog/ulid/v2"
+	"gorm.io/gorm"
 )
 
 // AuthService fournit des services d'authentification
 type AuthService struct {
-    DB *gorm.DB
+	DB *gorm.DB
 }
 
+// Récupère un utilisateur par son ID
+func (s *AuthService) GetUserByID(userID string) (*models.Users, error) {
+	var user models.Users
+	if err := s.DB.First(&user, "id = ?", userID).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
 
-//ici on crée une nouvelle instance de AuthService 
+// ici on crée une nouvelle instance de AuthService
 func NewAuthService(db *gorm.DB) *AuthService {
-    return &AuthService{
-        DB: db,
-    }
+	return &AuthService{
+		DB: db,
+	}
 }
 
 // Register enregistre un nouvel utilisateur
 func (s *AuthService) Register(username, email, password, profilePhoto, favoriteSport, location, bio string, birthDate *time.Time, role models.Role, skillLevel string, pac, sho, pas, dri, def, phy, matchesPlayed, matchesWon, goalsScored, behaviorScore int) (models.Users, error) {
-    entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
-    newID := ulid.MustNew(ulid.Timestamp(time.Now()), entropy)
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+	newID := ulid.MustNew(ulid.Timestamp(time.Now()), entropy)
 
-    hashedPassword, err := helpers.HashPassword(password)
-    if err != nil {
-        return models.Users{}, err
-    }
+	hashedPassword, err := helpers.HashPassword(password)
+	if err != nil {
+		return models.Users{}, err
+	}
 
-    user := models.Users{
-        ID:            newID.String(), 
-        Username:      username,
-        Email:         email,
-        Location:      location,
-        ProfilePhoto:  profilePhoto,
-        Bio:           bio,
-        FavoriteSport: favoriteSport,
-        PasswordHash:  hashedPassword,
-        BirthDate:     birthDate,
-        Role:          role,
-        SkillLevel:    skillLevel,
-        Pac:           pac,
-        Sho:           sho,
-        Pas:           pas,
-        Dri:           dri,
-        Def:           def,
-        Phy:           phy,
-        MatchesPlayed: matchesPlayed,
-        MatchesWon:    matchesWon,
-        GoalsScored:   goalsScored,
-        BehaviorScore: behaviorScore,
-    }
+	user := models.Users{
+		ID:            newID.String(),
+		Username:      username,
+		Email:         email,
+		Location:      location,
+		ProfilePhoto:  profilePhoto,
+		Bio:           bio,
+		FavoriteSport: favoriteSport,
+		PasswordHash:  hashedPassword,
+		BirthDate:     birthDate,
+		Role:          role,
+		SkillLevel:    skillLevel,
+		Pac:           pac,
+		Sho:           sho,
+		Pas:           pas,
+		Dri:           dri,
+		Def:           def,
+		Phy:           phy,
+		MatchesPlayed: matchesPlayed,
+		MatchesWon:    matchesWon,
+		GoalsScored:   goalsScored,
+		BehaviorScore: behaviorScore,
+	}
 
-    if err := s.DB.Create(&user).Error; err != nil {
-        return models.Users{}, err
-    }
+	if err := s.DB.Create(&user).Error; err != nil {
+		return models.Users{}, err
+	}
 
-    return user, nil
+	return user, nil
 }
 
 // Login authentifie un utilisateur et retourne un token JWT et un refreshToken
 func (s *AuthService) Login(email, password string) (string, string, error) {
-    var user models.Users
-    if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
-        return "", "", err
-    }
+	var user models.Users
+	if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		return "", "", err
+	}
 
-    if !helpers.CheckPasswordHash(password, user.PasswordHash) {
-        return "", "", ErrInvalidCredentials
-    }
+	if !helpers.CheckPasswordHash(password, user.PasswordHash) {
+		return "", "", ErrInvalidCredentials
+	}
 
-    userID, err := ulid.Parse(user.ID)
-    if err != nil {
-        return "", "", err
-    }
-    accessToken, err := middlewares.GenerateToken(userID)
-    if err != nil {
-        return "", "", err
-    }
+	userID, err := ulid.Parse(user.ID)
+	if err != nil {
+		return "", "", err
+	}
+	accessToken, err := middlewares.GenerateToken(userID)
+	if err != nil {
+		return "", "", err
+	}
 
-    userID, err = ulid.Parse(user.ID)
-    if err != nil {
-        return "", "", err
-    }
-    refreshToken, err := middlewares.GenerateRefreshToken(userID)
-    if err != nil {
-        return "", "", err
-    }
+	userID, err = ulid.Parse(user.ID)
+	if err != nil {
+		return "", "", err
+	}
+	refreshToken, err := middlewares.GenerateRefreshToken(userID)
+	if err != nil {
+		return "", "", err
+	}
 
-    return accessToken, refreshToken, nil
+	return accessToken, refreshToken, nil
 }
 
 func(s *AuthService) GetUserByID(id string) (models.Users, error) {
@@ -190,35 +198,35 @@ func (s *AuthService) UpdateUser(id, username, email, password, profilePhoto, fa
 
 // Refresh génère un nouveau accessToken à partir d'un refreshToken valide
 func (s *AuthService) Refresh(refreshToken string) (string, error) {
-    claims, err := middlewares.ParseToken(refreshToken)
-    if err != nil {
-        return "", err
-    }
+	claims, err := middlewares.ParseToken(refreshToken)
+	if err != nil {
+		return "", err
+	}
 
-    if claims.ExpiresAt < time.Now().Unix() {
-        return "", errors.New("refresh token expired")
-    }
+	if claims.ExpiresAt < time.Now().Unix() {
+		return "", errors.New("refresh token expired")
+	}
 
-    accessToken, err := middlewares.GenerateToken(claims.UserID)
-    if err != nil {
-        return "", err
-    }
+	accessToken, err := middlewares.GenerateToken(claims.UserID)
+	if err != nil {
+		return "", err
+	}
 
-    return accessToken, nil
+	return accessToken, nil
 }
 
 // UpdateRefreshToken met à jour le token de rafraîchissement pour un utilisateur spécifique
 func (s *AuthService) UpdateRefreshToken(email string, refreshToken string) error {
-    var user models.Users
-    if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
-        return err
-    }
-    user.RefreshToken = refreshToken
-    if err := s.DB.Save(&user).Error; err != nil {
-        return err
-    }
+	var user models.Users
+	if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		return err
+	}
+	user.RefreshToken = refreshToken
+	if err := s.DB.Save(&user).Error; err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
 
 // Erreurs spécifiques pour le service
