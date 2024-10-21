@@ -15,9 +15,16 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 
 func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController) {
 	api := app.Group("/api/matches")
+	api.Get("/", controller.GetAllMatchesHandler)
 	api.Post("/", controller.CreateMatchHandler)
 	api.Get("/:id", controller.GetMatchByIDHandler)
 	api.Use(middlewares.JWTMiddleware2)
 	api.Put("/:id", controller.UpdateMatchHandler)
 	api.Delete("/:id", controller.DeleteMatchHandler)
+}
+
+func SetupRoutesMatchePlayers(app *fiber.App, controller *controllers.MatchPlayersController) {
+	api := app.Group("/api/matchesPlayers")
+	api.Get("/:match_id", controller.GetMatchPlayersByMatchIDHandler)
+	api.Post("/", controller.CreateMatchPlayerHandler)
 }

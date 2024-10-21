@@ -31,6 +31,7 @@ func Run() {
 	err = db.AutoMigrate(
 		&models.Users{},
 		&models.Matches{},
+		&models.MatchPlayers{},
 	)
 	if err != nil {
 		log.Fatal("could not migrate the database", err)
@@ -45,7 +46,9 @@ func Run() {
 	authService := services.NewAuthService(db)
 	authController := controllers.NewAuthController(authService)
 	matchService := services.NewMatchService(db)
-	matchController := controllers.NewMatchController(matchService, db)
+	matchController := controllers.NewMatchController(matchService, authService, db)
+	matchPlayersService := services.NewMatchPlayersService(db)
+	matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db)
 
 	app := fiber.New()
 
@@ -57,6 +60,7 @@ func Run() {
 
 	routes.SetupRoutesAuth(app, authController)
 	routes.SetupRoutesMatches(app, matchController)
+	routes.SetupRoutesMatchePlayers(app, matchPlayersController)
 
 	// Démarrer le serveur
 	port := os.Getenv("API_PORT")
