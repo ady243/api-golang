@@ -193,7 +193,6 @@ func (s *AuthService) UpdateUser(id, username, email, password, profilePhoto, fa
     }
 
     return user, nil
-
 }
 
 // Refresh génère un nouveau accessToken à partir d'un refreshToken valide
