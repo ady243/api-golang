@@ -71,3 +71,36 @@ SECRET_KEY=secret
     "address": "string",
     "number_of_players": integer
 }
+```
+
+# Gérer les joueurs d'un match (matchPlayers)
+
+## **Récupérer les joueurs d'un match**
+- **Route**: `/api/matchesPlayers/:match_id`
+- **Méthode**: `GET`
+- **Description**: Retourne la liste des joueurs associés à un match donné.
+
+## **Ajouter un joueur à un match**
+- **Route**: `/api/matchesPlayers/`
+- **Méthode**: `POST`
+- **Requête**:
+    ```json
+    {
+      "match_id": "string",
+      "player_id": "string"
+    }
+    ```
+- **Description**: Associe un joueur à un match en spécifiant l'ID du match et l'ID du joueur.
+
+## **Attribuer une équipe à un joueur (organisateur uniquement)**
+- **Route**: `/api/matchesPlayers/assignTeam`
+- **Méthode**: `PUT`
+- **Authorization**: Seul l'organisateur du match peut effectuer cette opération.
+- **Requête**:
+    ```json
+    {
+      "match_player_id": "string",
+      "team_number": 1 | 2
+    }
+    ```
+- **Description**: Permet à l'organisateur d'assigner une équipe (1 ou 2) à un joueur pour un match spécifique.
