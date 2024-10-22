@@ -74,3 +74,37 @@ func (ctrl *MatchPlayersController) CreateMatchPlayerHandler(c *fiber.Ctx) error
 
 	return c.Status(fiber.StatusCreated).JSON(matchPlayer)
 }
+
+func (ctrl *MatchPlayersController) AssignTeamToPlayerHandler(c *fiber.Ctx) error {
+	var req struct {
+		MatchPlayerID string `json:"match_player_id" binding:"required"`
+		TeamNumber    int    `json:"team_number" binding:"required"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if req.TeamNumber != 1 && req.TeamNumber != 2 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid team number"})
+	}
+
+	matchPlayer, err := ctrl.MatchPlayersService.GetMatchPlayerByID(req.MatchPlayerID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match player not found"})
+	}
+
+	// Vérification si l'utilisateur est l'organisateur du match
+	if !ctrl.AuthService.IsOrganizer(matchPlayer.MatchID, c.Locals("user_id").(string)) {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	// Attribuer l'équipe
+	matchPlayer.TeamNumber = &req.TeamNumber
+
+	if err := ctrl.MatchPlayersService.UpdateMatchPlayer(matchPlayer); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(matchPlayer)
+}

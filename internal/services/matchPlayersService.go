@@ -31,3 +31,18 @@ func (s *MatchPlayersService) GetMatchPlayersByMatchID(matchID string) ([]models
 	}
 	return matchPlayers, nil
 }
+
+func (s *MatchPlayersService) GetMatchPlayerByID(matchPlayerID string) (*models.MatchPlayers, error) {
+	var matchPlayer models.MatchPlayers
+	if err := s.DB.Where("id = ?", matchPlayerID).First(&matchPlayer).Error; err != nil {
+		return nil, err
+	}
+	return &matchPlayer, nil
+}
+
+func (s *MatchPlayersService) UpdateMatchPlayer(matchPlayer *models.MatchPlayers) error {
+	if err := s.DB.Save(matchPlayer).Error; err != nil {
+		return err
+	}
+	return nil
+}

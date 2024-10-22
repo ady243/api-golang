@@ -230,3 +230,12 @@ func (s *AuthService) UpdateRefreshToken(email string, refreshToken string) erro
 
 // Erreurs spécifiques pour le service
 var ErrInvalidCredentials = errors.New("invalid credentials")
+
+// Vérifie si le user est bien l'organisateur du match
+func (s *AuthService) IsOrganizer(matchID, userID string) bool {
+	var match models.Matches
+	if err := s.DB.Where("id = ? AND organizer_id = ?", matchID, userID).First(&match).Error; err != nil {
+		return false
+	}
+	return true
+}
