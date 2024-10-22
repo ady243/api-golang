@@ -106,93 +106,84 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 	return accessToken, refreshToken, nil
 }
 
-func(s *AuthService) GetUserByID(id string) (models.Users, error) {
-    var user models.Users
-    if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
-        return models.Users{}, err
-    }
-
-    return user, nil
-}
-
-//update user
+// update user
 func (s *AuthService) UpdateUser(id, username, email, password, profilePhoto, favoriteSport, location, bio string, birthDate *time.Time, role models.Role, skillLevel string, pac, sho, pas, dri, def, phy, matchesPlayed, matchesWon, goalsScored, behaviorScore int) (models.Users, error) {
-    var user models.Users
-    if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
-        return models.Users{}, err
-    }
+	var user models.Users
+	if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
+		return models.Users{}, err
+	}
 
-    if username != "" {
-        user.Username = username
-    }
-    if email != "" {
-        user.Email = email
-    }
-    if password != "" {
-        hashedPassword, err := helpers.HashPassword(password)
-        if err != nil {
-            return models.Users{}, err
-        }
-        user.PasswordHash = hashedPassword
-    }
+	if username != "" {
+		user.Username = username
+	}
+	if email != "" {
+		user.Email = email
+	}
+	if password != "" {
+		hashedPassword, err := helpers.HashPassword(password)
+		if err != nil {
+			return models.Users{}, err
+		}
+		user.PasswordHash = hashedPassword
+	}
 
-    if profilePhoto != "" {
-        user.ProfilePhoto = profilePhoto
-    }
-    if favoriteSport != "" {
-        user.FavoriteSport = favoriteSport
-    }
-    if location != "" {
-        user.Location = location
-    }
-    if bio != "" {
-        user.Bio = bio
-    }
-    if birthDate != nil {
-        user.BirthDate = birthDate
-    }
-    if role != "" {
-        user.Role = role
-    }
-    if skillLevel != "" {
-        user.SkillLevel = skillLevel
-    }
-    if pac != 0 {
-        user.Pac = pac
-    }
-    if sho != 0 {
-        user.Sho = sho
-    }
-    if pas != 0 {
-        user.Pas = pas
-    }
-    if dri != 0 {
-        user.Dri = dri
-    }
-    if def != 0 {
-        user.Def = def
-    }
-    if phy != 0 {
-        user.Phy = phy
-    }
-    if matchesPlayed != 0 {
-        user.MatchesPlayed = matchesPlayed
-    }
-    if matchesWon != 0 {
-        user.MatchesWon = matchesWon
-    }
-    if goalsScored != 0 {
-        user.GoalsScored = goalsScored
-    }
-    if behaviorScore != 0 {
-        user.BehaviorScore = behaviorScore
-    }
+	if profilePhoto != "" {
+		user.ProfilePhoto = profilePhoto
+	}
+	if favoriteSport != "" {
+		user.FavoriteSport = favoriteSport
+	}
+	if location != "" {
+		user.Location = location
+	}
+	if bio != "" {
+		user.Bio = bio
+	}
+	if birthDate != nil {
+		user.BirthDate = birthDate
+	}
+	if role != "" {
+		user.Role = role
+	}
+	if skillLevel != "" {
+		user.SkillLevel = skillLevel
+	}
+	if pac != 0 {
+		user.Pac = pac
+	}
+	if sho != 0 {
+		user.Sho = sho
+	}
+	if pas != 0 {
+		user.Pas = pas
+	}
+	if dri != 0 {
+		user.Dri = dri
+	}
+	if def != 0 {
+		user.Def = def
+	}
+	if phy != 0 {
+		user.Phy = phy
+	}
+	if matchesPlayed != 0 {
+		user.MatchesPlayed = matchesPlayed
+	}
+	if matchesWon != 0 {
+		user.MatchesWon = matchesWon
+	}
+	if goalsScored != 0 {
+		user.GoalsScored = goalsScored
+	}
+	if behaviorScore != 0 {
+		user.BehaviorScore = behaviorScore
+	}
 
-    if err := s.DB.Save(&user).Error; err != nil {
-        return models.Users{}, err
-    }
+	if err := s.DB.Save(&user).Error; err != nil {
+		return models.Users{}, err
+	}
 
-    return user, nil
+	return user, nil
 }
 
 // Refresh génère un nouveau accessToken à partir d'un refreshToken valide
