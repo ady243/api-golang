@@ -46,9 +46,10 @@ func Run() {
 	authService := services.NewAuthService(db)
 	authController := controllers.NewAuthController(authService)
 	matchService := services.NewMatchService(db)
+	openAIService := services.NewOpenAIService() 
 	matchController := controllers.NewMatchController(matchService, authService, db)
 	matchPlayersService := services.NewMatchPlayersService(db)
-	matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db)
+	matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db, openAIService)
 
 	app := fiber.New()
 

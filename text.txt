@@ -1,0 +1,270 @@
+your_flutter_project/
+├── lib/
+│   ├── main.dart
+│   ├── models/
+│   │   ├── player.dart
+│   │   └── player_position.dart
+│   ├── services/
+│   │   └── api_service.dart
+│   ├── screens/
+│   │   └── formation_screen.dart
+│   └── widgets/
+│       └── football_field.dart
+├── pubspec.yaml
+
+
+class Player {
+  final String id;
+  final String username;
+  final String role;
+  final String profilePhoto;
+  final String favoriteSport;
+  final String location;
+  final String skillLevel;
+  final String bio;
+  final int pac;
+  final int sho;
+  final int pas;
+  final int dri;
+  final int def;
+  final int phy;
+  final int matchesPlayed;
+  final int matchesWon;
+  final int goalsScored;
+  final int behaviorScore;
+
+  Player({
+    required this.id,
+    required this.username,
+    required this.role,
+    required this.profilePhoto,
+    required this.favoriteSport,
+    required this.location,
+    required this.skillLevel,
+    required this.bio,
+    required this.pac,
+    required this.sho,
+    required this.pas,
+    required this.dri,
+    required this.def,
+    required this.phy,
+    required this.matchesPlayed,
+    required this.matchesWon,
+    required this.goalsScored,
+    required this.behaviorScore,
+  });
+
+  factory Player.fromJson(Map<String, dynamic> json) {
+    return Player(
+      id: json['id'],
+      username: json['username'],
+      role: json['role'],
+      profilePhoto: json['profile_photo'],
+      favoriteSport: json['favorite_sport'],
+      location: json['location'],
+      skillLevel: json['skill_level'],
+      bio: json['bio'],
+      pac: json['pac'],
+      sho: json['sho'],
+      pas: json['pas'],
+      dri: json['dri'],
+      def: json['def'],
+      phy: json['phy'],
+      matchesPlayed: json['matches_played'],
+      matchesWon: json['matches_won'],
+      goalsScored: json['goals_scored'],
+      behaviorScore: json['behavior_score'],
+    );
+  }
+}
+
+
+
+import 'player.dart';
+
+class PlayerPosition {
+  final Player player;
+  final double x;
+  final double y;
+
+  PlayerPosition({required this.player, required this.x, required this.y});
+}
+
+
+
+//service
+
+
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:your_flutter_project/models/player.dart';
+
+class ApiService {
+  final String baseUrl;
+  static final ApiService _instance = ApiService._internal('http://your_backend_url');
+
+  factory ApiService() {
+    return _instance;
+  }
+
+  ApiService._internal(this.baseUrl);
+
+  Future<Map<String, dynamic>> getFormationSuggestions(String matchId) async {
+    final response = await http.get(Uri.parse('$baseUrl/api/matchesPlayers/$matchId'));
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load formation suggestions');
+    }
+  }
+}
+
+
+//formationField
+
+import 'package:flutter/material.dart';
+import 'package:your_flutter_project/models/player_position.dart';
+
+class FootballField extends StatelessWidget {
+  final List<PlayerPosition> playerPositions;
+
+  FootballField({required this.playerPositions});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.green,
+      child: Stack(
+        children: playerPositions.map((playerPosition) {
+          return Positioned(
+            left: playerPosition.x,
+            top: playerPosition.y,
+            child: Column(
+              children: [
+                Icon(Icons.sports_soccer, color: Colors.white, size: 24),
+                Text(
+                  playerPosition.player.username,
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// Formation screen
+import 'package:flutter/material.dart';
+import 'package:your_flutter_project/services/api_service.dart';
+import 'package:your_flutter_project/widgets/football_field.dart';
+import 'package:your_flutter_project/models/player.dart';
+import 'package:your_flutter_project/models/player_position.dart';
+
+class FormationScreen extends StatefulWidget {
+  final String matchId;
+
+  FormationScreen({required this.matchId});
+
+  @override
+  _FormationScreenState createState() => _FormationScreenState();
+}
+
+class _FormationScreenState extends State<FormationScreen> {
+  final ApiService apiService = ApiService();
+  List<PlayerPosition> playerPositions = [];
+
+  Future<void> _fetchFormationSuggestions() async {
+    try {
+      final response = await apiService.getFormationSuggestions(widget.matchId);
+      setState(() {
+        playerPositions = _mapPlayersToPositions(response['players'], response['formations']);
+      });
+    } catch (e) {
+      print('Failed to load formation suggestions: $e');
+    }
+  }
+
+  List<PlayerPosition> _mapPlayersToPositions(List<dynamic> players, List<String> formations) {
+    // Exemple simple de mapping des joueurs aux positions
+    // Vous pouvez ajuster les positions en fonction de la formation
+    List<PlayerPosition> positions = [];
+    double width = MediaQuery.of(context).size.width;
+    double height = MediaQuery.of(context).size.height;
+
+    // Exemple de positions pour une formation 4-4-2
+    List<Map<String, double>> formationPositions = [
+      {'x': width * 0.5, 'y': height * 0.9}, // Gardien
+      {'x': width * 0.2, 'y': height * 0.7}, // Défenseur gauche
+      {'x': width * 0.4, 'y': height * 0.7}, // Défenseur central gauche
+      {'x': width * 0.6, 'y': height * 0.7}, // Défenseur central droit
+      {'x': width * 0.8, 'y': height * 0.7}, // Défenseur droit
+      {'x': width * 0.2, 'y': height * 0.5}, // Milieu gauche
+      {'x': width * 0.4, 'y': height * 0.5}, // Milieu central gauche
+      {'x': width * 0.6, 'y': height * 0.5}, // Milieu central droit
+      {'x': width * 0.8, 'y': height * 0.5}, // Milieu droit
+      {'x': width * 0.3, 'y': height * 0.3}, // Attaquant gauche
+      {'x': width * 0.7, 'y': height * 0.3}, // Attaquant droit
+    ];
+
+    for (int i = 0; i < players.length && i < formationPositions.length; i++) {
+      positions.add(PlayerPosition(
+        player: Player.fromJson(players[i]),
+        x: formationPositions[i]['x']!,
+        y: formationPositions[i]['y']!,
+      ));
+    }
+
+    return positions;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Formation Suggestions'),
+      ),
+      body: Column(
+        children: [
+          ElevatedButton(
+            onPressed: _fetchFormationSuggestions,
+            child: Text('Get Formation Suggestions'),
+          ),
+          Expanded(
+            child: playerPositions.isNotEmpty
+                ? FootballField(playerPositions: playerPositions)
+                : Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+
+//run
+
+import 'package:flutter/material.dart';
+import 'package:your_flutter_project/screens/formation_screen.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Formation Suggestions',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: FormationScreen(matchId: 'your_match_id'),
+    );
+  }
+}
