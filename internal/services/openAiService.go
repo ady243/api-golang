@@ -59,7 +59,7 @@ func (s *OpenAIService) SuggestFormations(players []models.Users) ([]string, err
     if len(resp.Choices) > 0 {
         formations = append(formations, resp.Choices[0].Message.Content)
     } else {
-        return nil, fmt.Errorf("Aucune formation suggérée par OpenAI")
+        return nil, fmt.Errorf("aucune formation suggérée par OpenAI")
     }
 
     return formations, nil
