@@ -81,7 +81,12 @@ func JWTMiddleware(c *fiber.Ctx) error {
         return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
     }
 
-    tokenString := strings.Split(authHeader, " ")[1]
+    authParts := strings.Split(authHeader, " ")
+    if len(authParts) != 2 {
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token format"})
+    }
+    tokenString := authParts[1]
+
     claims, err := ParseToken(tokenString)
     if err != nil {
         return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})

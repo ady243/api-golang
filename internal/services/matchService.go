@@ -28,10 +28,10 @@ func (s *MatchService) CreateMatch(match *models.Matches) error {
 	return nil
 }
 
-// Méthode pour récupérer tous les matchs
+// Méthode pour récupérer tous les matchs avec préchargement des informations de l'organisateur
 func (s *MatchService) GetAllMatches() ([]models.Matches, error) {
 	var matches []models.Matches
-	if err := s.DB.Find(&matches).Error; err != nil {
+	if err := s.DB.Preload("Organizer").Find(&matches).Error; err != nil {
 		return nil, err
 	}
 	return matches, nil

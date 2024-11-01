@@ -27,15 +27,39 @@ func NewMatchController(matchService *services.MatchService, authService *servic
 }
 
 func (ctrl *MatchController) GetAllMatchesHandler(c *fiber.Ctx) error {
-	// Appelle le service pour récupérer tous les matchs
-	matches, err := ctrl.MatchService.GetAllMatches()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not retrieve matches"})
-	}
+    // Appelle le service pour récupérer tous les matchs
+    matches, err := ctrl.MatchService.GetAllMatches()
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not retrieve matches"})
+    }
 
-	// Retourne les matchs en réponse
-	return c.Status(fiber.StatusOK).JSON(matches)
+    // Prépare une liste de matchs avec les informations filtrées de l'organisateur
+    var filteredMatches []fiber.Map
+    for _, match := range matches {
+        organizer := fiber.Map{
+            "id":         match.Organizer.ID,
+            "username":   match.Organizer.Username,
+            "profile_photo": match.Organizer.ProfilePhoto,
+        }
+        filteredMatches = append(filteredMatches, fiber.Map{
+            "id":               match.ID,
+            "organizer":        organizer,
+            "referee_id":       match.RefereeID,
+            "description":      match.Description,
+            "date":             match.MatchDate,
+            "time":             match.MatchTime,
+            "address":          match.Address,
+            "number_of_players": match.NumberOfPlayers,
+            "status":           match.Status,
+            "created_at":       match.CreatedAt,
+            "updated_at":       match.UpdatedAt,
+        })
+    }
+
+    // Retourne les matchs filtrés en réponse
+    return c.Status(fiber.StatusOK).JSON(filteredMatches)
 }
+
 
 func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
     var req struct {
