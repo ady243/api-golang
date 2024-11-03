@@ -19,8 +19,8 @@ type Matches struct {
 	RefereeID       *string    `json:"referee_id" gorm:"null"`                            // Référence vers l'ID de l'arbitre, nullable (Users.id)
 	Referee         *Users     `json:"referee" gorm:"foreignKey:RefereeID;references:ID"` // Clé étrangère vers Users, nullable
 	Description     *string    `json:"description" gorm:"null"`                           // Description du match, nullable
-	MatchDate       time.Time  `json:"date" gorm:"not null"`                              // Date du match
-	MatchTime       time.Time  `json:"time" gorm:"not null"`                              // Heure du match
+	MatchDate       time.Time  `json:"match_date" gorm:"not null"`                        // Date du match
+	MatchTime       time.Time  `json:"match_time" gorm:"not null"`                        // Heure du match
 	Address         string     `json:"address" gorm:"not null"`                           // Adresse du match
 	NumberOfPlayers int        `json:"number_of_players" gorm:"not null"`                 // Nombre de joueurs
 	ScoreTeam1      int        `json:"score_team_1" gorm:"default:0"`                     // Score de l'équipe 1, par défaut 0

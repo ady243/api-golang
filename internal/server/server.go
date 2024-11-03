@@ -9,6 +9,7 @@ import (
 	"github.com/ady243/teamup/internal/routes"
 	"github.com/ady243/teamup/internal/services"
 	"github.com/ady243/teamup/storage"
+	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
@@ -17,60 +18,66 @@ import (
 )
 
 func Run() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file", err)
+	// Load environment variables
+	if err := godotenv.Load(".env"); err != nil {
+		log.Println("No .env file found", err)
 	}
 
-	// Connexion à la base de données
+	// Database connection
 	db, err := storage.NewConnection()
 	if err != nil {
-		log.Fatal("could not connect to the database", err)
 	}
 
-	err = db.AutoMigrate(
-		&models.Users{},
-		&models.Matches{},
-		&models.MatchPlayers{},
-	)
-	if err != nil {
-		log.Fatal("could not migrate the database", err)
+	// Table migration
+	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}); err != nil {
+		log.Printf("Error migrating database: %v", err)
 	}
 
-	//ici c'est pour generer des faux utilisateurs pour tester
+	// Optional: Create fake users for testing
 	users := models.GenerateFakeUsers(10)
 	for _, user := range users {
 		db.Create(&user)
 	}
 
+	// Connect to Redis
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: os.Getenv("REDIS_ADDR"),
+	})
+
+	// Initialize services and controllers
 	authService := services.NewAuthService(db)
 	authController := controllers.NewAuthController(authService)
 	matchService := services.NewMatchService(db)
-	openAIService := services.NewOpenAIService() 
-	matchController := controllers.NewMatchController(matchService, authService, db)
+	openAIService := services.NewOpenAIService()
+	chatService := services.NewChatService(db, redisClient)
+	matchController := controllers.NewMatchController(matchService, authService, db, chatService)
 	matchPlayersService := services.NewMatchPlayersService(db)
 	matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db, openAIService)
+	chatController := controllers.NewChatController(chatService)
 
+	// Configure Fiber app
 	app := fiber.New()
+	app.Use(helmet.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+	}))
+	app.Use(limiter.New(limiter.Config{
+		Max:        10,
+		Expiration: 30 * 1000,
+	}))
 
-	app.Use(helmet.New(
-		
-	))
-
-	app.Use(cors.New())
-
-	app.Use(limiter.New())
-
+	// Define routes
 	routes.SetupRoutesAuth(app, authController)
 	routes.SetupRoutesMatches(app, matchController)
 	routes.SetupRoutesMatchePlayers(app, matchPlayersController)
+	routes.SetupChatRoutes(app, chatController)
 
-
-	// Démarrer le serveur
+	// Start server
 	port := os.Getenv("API_PORT")
 	if port == "" {
-		port = "1234"
+		port = "3003"
 	}
+	log.Printf("Server started on port %s", port)
 	log.Fatal(app.Listen(":" + port))
-
 }

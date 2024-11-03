@@ -7,8 +7,9 @@ services:
     depends_on:
       - postgres
       - dragonfly
+      - redis
     networks:
-      - postgres-network 
+      - postgres-network
       - mynetwork
     environment:
       POSTGRES_HOST: postgres
@@ -20,9 +21,12 @@ services:
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       DRAGONFLY_HOST: dragonfly
+      DRAGONFLY_PORT: 6379 
+      REDIS_ADDR: redis:6379
+      REDIS_PASSWORD:
     volumes:
       - .:/app
-      
+
   postgres:
     image: postgres:latest
     container_name: postgres_container
@@ -36,16 +40,24 @@ services:
     volumes:
       - postgres-test:/var/lib/postgresql/data
     networks:
-      - postgres-network  
+      - postgres-network
 
   dragonfly:
     image: "docker.dragonflydb.io/dragonflydb/dragonfly"
     container_name: dragonfly_container
     ports:
-      - "${DRAGONFLY_PORT}:${DRAGONFLY_PORT}"
+      - "6380:6379" 
     restart: unless-stopped
     volumes:
       - dragonflydata:/data
+    networks:
+      - mynetwork
+
+  redis:
+    image: redis:latest
+    container_name: redis_container
+    ports:
+      - "6379:6379"
     networks:
       - mynetwork
 
@@ -59,7 +71,7 @@ services:
 
 volumes:
   dragonflydata:
-  postgres-test: { }
+  postgres-test:
 
 networks:
   postgres-network:

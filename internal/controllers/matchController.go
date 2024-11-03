@@ -1,157 +1,163 @@
 package controllers
 
 import (
+	"context"
+	"encoding/json"
 	"log"
 	"math/rand"
 	"time"
 
 	"github.com/ady243/teamup/internal/models"
 	"github.com/ady243/teamup/internal/services"
+	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
 
 type MatchController struct {
 	MatchService *services.MatchService
+	ChatService  *services.ChatService
+	RedisClient  *redis.Client
 	AuthService  *services.AuthService
 	DB           *gorm.DB
 }
 
-func NewMatchController(matchService *services.MatchService, authService *services.AuthService, db *gorm.DB) *MatchController {
+func NewMatchController(matchService *services.MatchService, authService *services.AuthService, db *gorm.DB, chatService *services.ChatService) *MatchController {
 	return &MatchController{
 		MatchService: matchService,
 		AuthService:  authService,
 		DB:           db,
+		ChatService:  chatService,
 	}
 }
 
 func (ctrl *MatchController) GetAllMatchesHandler(c *fiber.Ctx) error {
-    // Appelle le service pour récupérer tous les matchs
-    matches, err := ctrl.MatchService.GetAllMatches()
-    if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not retrieve matches"})
-    }
+	// Appelle le service pour récupérer tous les matchs
+	matches, err := ctrl.MatchService.GetAllMatches()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not retrieve matches"})
+	}
 
-    // Prépare une liste de matchs avec les informations filtrées de l'organisateur
-    var filteredMatches []fiber.Map
-    for _, match := range matches {
-        organizer := fiber.Map{
-            "id":         match.Organizer.ID,
-            "username":   match.Organizer.Username,
-            "profile_photo": match.Organizer.ProfilePhoto,
-        }
-        filteredMatches = append(filteredMatches, fiber.Map{
-            "id":               match.ID,
-            "organizer":        organizer,
-            "referee_id":       match.RefereeID,
-            "description":      match.Description,
-            "date":             match.MatchDate,
-            "time":             match.MatchTime,
-            "address":          match.Address,
-            "number_of_players": match.NumberOfPlayers,
-            "status":           match.Status,
-            "created_at":       match.CreatedAt,
-            "updated_at":       match.UpdatedAt,
-        })
-    }
+	// Prépare une liste de matchs avec les informations filtrées de l'organisateur
+	var filteredMatches []fiber.Map
+	for _, match := range matches {
+		organizer := fiber.Map{
+			"id":            match.Organizer.ID,
+			"username":      match.Organizer.Username,
+			"profile_photo": match.Organizer.ProfilePhoto,
+		}
+		filteredMatches = append(filteredMatches, fiber.Map{
+			"id":                match.ID,
+			"organizer":         organizer,
+			"referee_id":        match.RefereeID,
+			"description":       match.Description,
+			"date":              match.MatchDate,
+			"time":              match.MatchTime,
+			"address":           match.Address,
+			"number_of_players": match.NumberOfPlayers,
+			"status":            match.Status,
+			"created_at":        match.CreatedAt,
+			"updated_at":        match.UpdatedAt,
+		})
+	}
 
-    // Retourne les matchs filtrés en réponse
-    return c.Status(fiber.StatusOK).JSON(filteredMatches)
+	// Retourne les matchs filtrés en réponse
+	return c.Status(fiber.StatusOK).JSON(filteredMatches)
 }
 
-
 func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
-    var req struct {
-        OrganizerID     string  `json:"organizer_id" binding:"required"`
-        RefereeID       *string `json:"referee_id"`
-        Description     *string `json:"description"`
-        MatchDate       string  `json:"match_date" binding:"required"`
-        MatchTime       string  `json:"match_time" binding:"required"`
-        Address         string  `json:"address" binding:"required"`
-        NumberOfPlayers int     `json:"number_of_players" binding:"required"`
-    }
+	var req struct {
+		OrganizerID     string  `json:"organizer_id" binding:"required"`
+		RefereeID       *string `json:"referee_id"`
+		Description     *string `json:"description"`
+		MatchDate       string  `json:"match_date" binding:"required"`
+		MatchTime       string  `json:"match_time" binding:"required"`
+		Address         string  `json:"address" binding:"required"`
+		NumberOfPlayers int     `json:"number_of_players" binding:"required"`
+	}
 
-    if err := c.BodyParser(&req); err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-    }
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    matchDate, err := time.Parse("2006-01-02", req.MatchDate)
-    if err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match date format. Use YYYY-MM-DD"})
-    }
+	matchDate, err := time.Parse("2006-01-02", req.MatchDate)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match date format. Use YYYY-MM-DD"})
+	}
 
-    matchTime, err := time.Parse("15:04", req.MatchTime)
-    if err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match time format. Use HH:MM"})
-    }
+	matchTime, err := time.Parse("15:04", req.MatchTime)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match time format. Use HH:MM"})
+	}
 
-    organizerID, err := ulid.Parse(req.OrganizerID)
-    if err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid organizer ID"})
-    }
+	organizerID, err := ulid.Parse(req.OrganizerID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid organizer ID"})
+	}
 
-    // Récupère l'utilisateur (organisateur) en base de données
-    user, err := ctrl.AuthService.GetUserByID(organizerID.String())
-    if err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Organizer not found"})
-    }
+	// Récupère l'utilisateur (organisateur) en base de données
+	user, err := ctrl.AuthService.GetUserByID(organizerID.String())
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Organizer not found"})
+	}
 
-    // Génère un nouvel ID de match
-    t := time.Now()
-    entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
-    matchID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
+	// Génère un nouvel ID de match
+	t := time.Now()
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	matchID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
-    // Crée un nouveau match avec les informations fournies
-    match := &models.Matches{
-        ID:              matchID,
-        OrganizerID:     user.ID,
-        Description:     req.Description,
-        MatchDate:       matchDate,
-        MatchTime:       matchTime,
-        Address:         req.Address,
-        NumberOfPlayers: req.NumberOfPlayers,
-        Status:          models.Upcoming,
-    }
+	// Crée un nouveau match avec les informations fournies
+	match := &models.Matches{
+		ID:              matchID,
+		OrganizerID:     user.ID,
+		Description:     req.Description,
+		MatchDate:       matchDate,
+		MatchTime:       matchTime,
+		Address:         req.Address,
+		NumberOfPlayers: req.NumberOfPlayers,
+		Status:          models.Upcoming,
+	}
 
-    if req.RefereeID != nil {
-        refereeID, err := ulid.Parse(*req.RefereeID)
-        if err != nil {
-            return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid referee ID"})
-        }
-        refereeIDStr := refereeID.String()
-        match.RefereeID = &refereeIDStr
-    }
+	if req.RefereeID != nil {
+		refereeID, err := ulid.Parse(*req.RefereeID)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid referee ID"})
+		}
+		refereeIDStr := refereeID.String()
+		match.RefereeID = &refereeIDStr
+	}
 
-    // Enregistre le match dans la base de données
-    if err := ctrl.MatchService.CreateMatch(match); err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-    }
+	// Enregistre le match dans la base de données
+	if err := ctrl.MatchService.CreateMatch(match); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    // Crée un objet simplifié pour l'organisateur à inclure dans la réponse
-    organizer := fiber.Map{
-        "id":        user.ID,
-        "username":  user.Username,
-        "profile_photo": user.ProfilePhoto, 
-    }
+	// Crée un objet simplifié pour l'organisateur à inclure dans la réponse
+	organizer := fiber.Map{
+		"id":            user.ID,
+		"username":      user.Username,
+		"profile_photo": user.ProfilePhoto,
+	}
 
-    // Retourne le match avec les infos de l'organisateur
-    matchWithOrganizer := fiber.Map{
-        "id":              match.ID,
-        "organizer_id":    match.OrganizerID,
-        "organizer":       organizer, 
-        "referee_id":      match.RefereeID,
-        "description":     match.Description,
-        "match_date":      match.MatchDate,
-        "match_time":      match.MatchTime,
-        "address":         match.Address,
-        "number_of_players": match.NumberOfPlayers,
-        "status":          match.Status,
-        "created_at":      match.CreatedAt,
-        "updated_at":      match.UpdatedAt,
-    }
+	// Retourne le match avec les infos de l'organisateur
+	matchWithOrganizer := fiber.Map{
+		"id":                match.ID,
+		"organizer_id":      match.OrganizerID,
+		"organizer":         organizer,
+		"referee_id":        match.RefereeID,
+		"description":       match.Description,
+		"match_date":        match.MatchDate,
+		"match_time":        match.MatchTime,
+		"address":           match.Address,
+		"number_of_players": match.NumberOfPlayers,
+		"status":            match.Status,
+		"created_at":        match.CreatedAt,
+		"updated_at":        match.UpdatedAt,
+	}
 
-    return c.Status(fiber.StatusCreated).JSON(matchWithOrganizer)
+	return c.Status(fiber.StatusCreated).JSON(matchWithOrganizer)
 }
 
 func (ctrl *MatchController) GetMatchByIDHandler(c *fiber.Ctx) error {
@@ -278,5 +284,79 @@ func (ctrl *MatchController) DeleteMatchHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.SendStatus(fiber.StatusNoContent) 
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func (ctrl *MatchController) ChatWebSocketHandler(c *websocket.Conn) {
+	matchID := c.Params("id")
+	userID := c.Locals("user_id").(string)
+
+	// Vérifier si l'utilisateur est dans le match
+	if err := ctrl.MatchService.IsUserInMatch(matchID, userID); err != nil {
+		c.Close()
+		log.Println("User not in match:", err)
+		return
+	}
+
+	room := "match:" + matchID
+	ctx := context.Background()
+	pubsub := ctrl.RedisClient.Subscribe(ctx, room)
+	defer pubsub.Close()
+
+	// Goroutine pour écouter les messages de Redis
+	go func() {
+		for {
+			msg, err := pubsub.ReceiveMessage(ctx)
+			if err != nil {
+				log.Printf("Erreur de réception de message dans Redis : %v", err)
+				break
+			}
+			if err := c.WriteMessage(websocket.TextMessage, []byte(msg.Payload)); err != nil {
+				log.Printf("Erreur d'envoi de message WebSocket : %v", err)
+				break
+			}
+		}
+	}()
+
+	for {
+		_, message, err := c.ReadMessage()
+		if err != nil {
+			log.Printf("Erreur de lecture de message WebSocket : %v", err)
+			break
+		}
+
+		// Construire un message avec métadonnées
+		fullMessage := fiber.Map{
+			"playerId":  userID,
+			"message":   string(message),
+			"timestamp": time.Now().Format(time.RFC3339),
+		}
+
+		// Publier le message au format JSON
+		msgJSON, _ := json.Marshal(fullMessage)
+		ctrl.RedisClient.Set(ctx, "chat:"+matchID+":"+userID, msgJSON, time.Hour*24*7)
+		ctrl.RedisClient.Publish(ctx, room, string(msgJSON))
+	}
+}
+
+func (ctrl *MatchController) AddPlayerToMatchHandler(c *fiber.Ctx) error {
+	matchID := c.Params("id")
+	userID := c.Locals("user_id").(string) // Assurez-vous que l'ID utilisateur est disponible dans le contexte
+
+	// Vérifier si l'utilisateur est déjà dans le match
+	if err := ctrl.MatchService.IsUserInMatch(matchID, userID); err == nil {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "User already in match"})
+	}
+
+	// Ajoute l'utilisateur au match
+	if err := ctrl.MatchService.JoinMatch(matchID, userID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Inscrit l'utilisateur au chat du match
+	if err := ctrl.ChatService.AddUserToChat(matchID, userID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not join chat"})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "Joined match and chat"})
 }
