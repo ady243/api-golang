@@ -30,4 +30,5 @@ func SetupRoutesMatchePlayers(app *fiber.App, controller *controllers.MatchPlaye
 	api.Get("/:match_id", controller.GetMatchPlayersByMatchIDHandler)
 	api.Post("/", controller.CreateMatchPlayerHandler)
 	api.Put("/assignTeam", controller.AssignTeamToPlayerHandler)
+	api.Delete("/:match_player_id", controller.DeleteMatchPlayerHandler)
 }

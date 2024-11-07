@@ -108,3 +108,31 @@ func (ctrl *MatchPlayersController) AssignTeamToPlayerHandler(c *fiber.Ctx) erro
 
 	return c.Status(fiber.StatusOK).JSON(matchPlayer)
 }
+
+func (ctrl *MatchPlayersController) DeleteMatchPlayerHandler(c *fiber.Ctx) error {
+	matchPlayerID := c.Params("match_player_id")
+
+	// Récupérer les informations sur le joueur du match
+	matchPlayer, err := ctrl.MatchPlayersService.GetMatchPlayerByID(matchPlayerID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match player not found"})
+	}
+
+	// Récupérer l'utilisateur connecté
+	userID := c.Locals("user_id").(string)
+
+	// Vérifier si l'utilisateur est soit l'organisateur, soit le joueur lui-même
+	if userID != matchPlayer.PlayerID && !ctrl.AuthService.IsOrganizer(matchPlayer.MatchID, userID) {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	// Mettre à jour le champ DeletedAt avec l'heure actuelle
+	now := time.Now()
+	matchPlayer.DeletedAt = &now
+
+	if err := ctrl.MatchPlayersService.UpdateMatchPlayer(matchPlayer); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Player marked as removed from match"})
+}

@@ -46,3 +46,10 @@ func (s *MatchPlayersService) UpdateMatchPlayer(matchPlayer *models.MatchPlayers
 	}
 	return nil
 }
+
+func (s *MatchPlayersService) DeleteMatchPlayer(matchPlayerID string) error {
+	if err := s.DB.Delete(&models.MatchPlayers{}, "id = ?", matchPlayerID).Error; err != nil {
+		return err
+	}
+	return nil
+}
