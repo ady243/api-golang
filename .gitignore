@@ -47,3 +47,13 @@ _cgo_export.*
 
 # variables d'environnement
 .env
+.env.local
+
+# Ignore postgres-data
+/postgres-data/
+
+# Ignore Dockerfile
+Dockerfile
+
+# Ignore go.mod
+go.mod

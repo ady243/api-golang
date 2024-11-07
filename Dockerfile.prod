@@ -1,0 +1,36 @@
+# Étape 1 : Construction de l'application dans une image Golang
+FROM golang:1.22 AS builder
+
+# Définir le répertoire de travail à l'intérieur du conteneur
+WORKDIR /app
+
+# Copier les fichiers de dépendances (go.mod et go.sum) dans l'image
+COPY go.mod go.sum ./
+
+# Télécharger les dépendances nécessaires
+RUN go mod download
+
+# Copier tout le code source de l'application
+COPY . .
+
+# Compiler l'application en mode production
+# CGO_ENABLED=0 permet de désactiver les dépendances au système pour rendre l'image plus légère
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/api ./main.go
+
+# Étape 2 : Créer une image minimale pour exécuter l'application
+FROM alpine:latest
+
+# Installer les certificats SSL pour que Go puisse effectuer des requêtes HTTPS
+RUN apk --no-cache add ca-certificates
+
+# Définir le répertoire de travail
+WORKDIR /root/
+
+# Copier l'exécutable construit depuis l'image builder
+COPY --from=builder /app/api .
+
+# Exposer le port sur lequel l'application tourne
+EXPOSE 3003
+
+# Démarrer l'application
+CMD ["./api"]

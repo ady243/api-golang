@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@cdktf/provider-aws": "^19.38.1",
+    "@cdktf/provider-google": "^14.7.0",
+    "cdktf": "^0.20.9",
+    "constructs": "^10.4.2"
+  }
+}
