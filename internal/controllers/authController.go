@@ -15,11 +15,13 @@ import (
 // AuthController fournit les gestionnaires pour les opérations d'authentification
 type AuthController struct {
     AuthService *services.AuthService
+    ImageService *services.ImageService
 }
 
-func NewAuthController(authService *services.AuthService) *AuthController {
+func NewAuthController(authService *services.AuthService, imageService *services.ImageService) *AuthController {
     return &AuthController{
-        AuthService: authService,
+        AuthService:  authService,
+        ImageService: imageService,
     }
 }
 
