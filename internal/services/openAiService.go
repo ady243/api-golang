@@ -28,14 +28,14 @@ func NewOpenAIService() *OpenAIService {
 func (s *OpenAIService) SuggestFormations(players []models.Users) ([]string, error) {
     var formations []string
 
-    // Construire le prompt pour l'API OpenAI
+    //Ici on fait appel à l'API OpenAI pour suggérer une formation
     prompt := "Voici les statistiques des joueurs :\n"
     for _, player := range players {
         prompt += fmt.Sprintf("Joueur: %s, Pac: %d, Sho: %d, Pas: %d, Dri: %d, Def: %d, Phy: %d\n",
             player.Username, player.Pac, player.Sho, player.Pas, player.Dri, player.Def, player.Phy)
     }
     prompt += "Suggérez une formation pour ces joueurs."
-    // Appeler l'API OpenAI avec CreateChatCompletion
+    // Ici on fait la gestion des erreurs et on initialise la version du modèle à utiliser
     resp, err := s.client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
         Model: "gpt-3.5-turbo",
         Messages: []openai.ChatCompletionMessage{
@@ -55,7 +55,7 @@ func (s *OpenAIService) SuggestFormations(players []models.Users) ([]string, err
         return nil, err
     }
 
-    // Extraire les formations de la réponse
+    // Ici on extrait la formation suggérée par OpenAI
     if len(resp.Choices) > 0 {
         formations = append(formations, resp.Choices[0].Message.Content)
     } else {
