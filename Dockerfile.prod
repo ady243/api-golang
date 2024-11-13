@@ -1,5 +1,7 @@
+# Dockerfile.prod (production)
+
 # Étape 1 : Construction de l'application dans une image Golang
-FROM golang:1.22 AS builder
+FROM golang:1.22 AS BUILDER
 
 # Définir le répertoire de travail à l'intérieur du conteneur
 WORKDIR /app
@@ -13,24 +15,27 @@ RUN go mod download
 # Copier tout le code source de l'application
 COPY . .
 
-# Compiler l'application en mode production
-# CGO_ENABLED=0 permet de désactiver les dépendances au système pour rendre l'image plus légère
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/api ./main.go
+# Construire l'application Go en mode production
+RUN go build -o app .
 
-# Étape 2 : Créer une image minimale pour exécuter l'application
-FROM alpine:latest
+# Étape 2 : Créer l'image finale pour exécuter l'application
+FROM ubuntu:22.04
 
-# Installer les certificats SSL pour que Go puisse effectuer des requêtes HTTPS
-RUN apk --no-cache add ca-certificates
+# Installer les dépendances nécessaires
+RUN apt-get update && apt-get install -y \
+    libc6
 
 # Définir le répertoire de travail
-WORKDIR /root/
+WORKDIR /app
 
-# Copier l'exécutable construit depuis l'image builder
-COPY --from=builder /app/api .
+# Copier l'application compilée depuis l'image BUILDER
+COPY --from=BUILDER /app/app /app
 
-# Exposer le port sur lequel l'application tourne
+# Copier le fichier .env
+COPY .env /app/.env
+
+# Exposer le port sur lequel l'API écoutera
 EXPOSE 3003
 
 # Démarrer l'application
-CMD ["./api"]
+CMD ["./app"]

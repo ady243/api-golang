@@ -57,3 +57,6 @@ Dockerfile
 
 # Ignore go.mod
 go.mod
+
+# Ignore node_modules
+node_modules/

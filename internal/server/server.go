@@ -70,6 +70,10 @@ func Run() {
     }))
 
     // Define routes
+
+    app.Get("/", func(c *fiber.Ctx) error {
+        return c.SendString("Welcome to Golang API")
+    })
     routes.SetupRoutesAuth(app, authController)
     routes.SetupRoutesMatches(app, matchController)
     routes.SetupRoutesMatchePlayers(app, matchPlayersController)
