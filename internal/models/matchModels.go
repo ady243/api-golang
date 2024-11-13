@@ -26,8 +26,8 @@ type Matches struct {
 	ScoreTeam1      int        `json:"score_team_1" gorm:"default:0"`           // Score de l'équipe 1
 	ScoreTeam2      int        `json:"score_team_2" gorm:"default:0"`           // Score de l'équipe 2
 	Status          Status     `json:"status"`                                  // Statut du match
-	Latitude        float64    `json:"latitude" gorm:"not null"`                // Latitude du match
-	Longitude       float64    `json:"longitude" gorm:"not null"`               // Longitude du match
+	Latitude        float64    `json:"latitude"`                                // Latitude du match
+	Longitude       float64    `json:"longitude"`                               // Longitude du match
 	CreatedAt       time.Time  `json:"created_at" gorm:"autoCreateTime"`        // Date de création
 	UpdatedAt       time.Time  `json:"updated_at" gorm:"autoUpdateTime"`        // Date de mise à jour
 	DeletedAt       *time.Time `json:"deleted_at" gorm:"index"`                 // Date de suppression (soft delete)
