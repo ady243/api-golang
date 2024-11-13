@@ -7,12 +7,14 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/ady243/teamup/internal/models"
 	"github.com/ady243/teamup/internal/services"
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
@@ -85,6 +87,11 @@ func getCoordinates(address, apiKey string) (float64, float64, error) {
 }
 
 func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file", err)
+	}
+
 	var req struct {
 		OrganizerID     string  `json:"organizer_id" binding:"required"`
 		RefereeID       *string `json:"referee_id"`
@@ -129,7 +136,8 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 	matchID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
 	// Récupérer la latitude et longitude de l'adresse
-	lat, lng, err := getCoordinates(req.Address, "AIzaSyAdNnq6m3qBSXKlKK5gbQJMdbd22OWeHCg")
+	googleApiKey := os.Getenv("GOOGLE_MAPS_API_KEY")
+	lat, lng, err := getCoordinates(req.Address, googleApiKey)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("Failed to geocode address: %v", err)})
 	}
@@ -305,12 +313,7 @@ func (ctrl *MatchController) GetNearbyMatchesHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid longitude"})
 	}
 
-	radius, err := strconv.ParseFloat(c.Query("radius"), 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid radius"})
-	}
-
-	matches, err := ctrl.MatchService.FindNearbyMatches(lat, lon, radius)
+	matches, err := ctrl.MatchService.FindNearbyMatches(lat, lon, 6.0) // La distance de recherche est de 6 km
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
