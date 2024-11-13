@@ -3,6 +3,7 @@ package controllers
 import (
 	"log"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/ady243/teamup/internal/models"
@@ -113,7 +114,7 @@ func (ctrl *MatchController) GetMatchByIDHandler(c *fiber.Ctx) error {
 
 	matchID, err := ulid.Parse(id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "A) Invalid match ID"})
 	}
 
 	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
@@ -129,7 +130,7 @@ func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 
 	matchID, err := ulid.Parse(id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "B) Invalid match ID"})
 	}
 
 	// Récupérer l'ID de l'utilisateur connecté via le middleware JWT
@@ -210,7 +211,7 @@ func (ctrl *MatchController) DeleteMatchHandler(c *fiber.Ctx) error {
 	// Parse l'ID du match
 	matchID, err := ulid.Parse(id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "C) Invalid match ID"})
 	}
 
 	// Récupère l'ID de l'utilisateur connecté
@@ -233,4 +234,29 @@ func (ctrl *MatchController) DeleteMatchHandler(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusNoContent) // 204 No Content
+}
+
+// Handler pour obtenir les matchs proches
+func (ctrl *MatchController) GetNearbyMatchesHandler(c *fiber.Ctx) error {
+	lat, err := strconv.ParseFloat(c.Query("lat"), 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid latitude"})
+	}
+
+	lon, err := strconv.ParseFloat(c.Query("lon"), 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid longitude"})
+	}
+
+	radius, err := strconv.ParseFloat(c.Query("radius"), 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid radius"})
+	}
+
+	matches, err := ctrl.MatchService.FindNearbyMatches(lat, lon, radius)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(matches)
 }

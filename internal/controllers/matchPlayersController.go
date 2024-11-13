@@ -45,7 +45,7 @@ func (ctrl *MatchPlayersController) CreateMatchPlayerHandler(c *fiber.Ctx) error
 
 	matchID, err := ulid.Parse(req.MatchID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "D Invalid match ID"})
 	}
 
 	playerID, err := ulid.Parse(req.PlayerID)
