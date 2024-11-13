@@ -1,8 +1,12 @@
 package controllers
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -17,6 +21,17 @@ type MatchController struct {
 	MatchService *services.MatchService
 	AuthService  *services.AuthService
 	DB           *gorm.DB
+}
+
+type GeoResponse struct {
+	Result []struct {
+		Geometry struct {
+			Location struct {
+				Lat float64 `json:"lat"`
+				Lng float64 `json:"lng"`
+			} `json:"location"`
+		} `json:"geometry"`
+	} `json:"results"`
 }
 
 func NewMatchController(matchService *services.MatchService, authService *services.AuthService, db *gorm.DB) *MatchController {
@@ -38,6 +53,37 @@ func (ctrl *MatchController) GetAllMatchesHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(matches)
 }
 
+func getCoordinates(address, apiKey string) (float64, float64, error) {
+	// URL encode l'adresse
+	address = url.QueryEscape(address)
+
+	// Crée l'URL de requête
+	url := fmt.Sprintf("https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s", address, apiKey)
+
+	// Effectue la requête GET à l'API
+	resp, err := http.Get(url)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer resp.Body.Close()
+
+	// Décode la réponse JSON
+	var geoResp GeoResponse
+	if err := json.NewDecoder(resp.Body).Decode(&geoResp); err != nil {
+		return 0, 0, err
+	}
+
+	// Vérifie si des résultats ont été trouvés
+	if len(geoResp.Result) == 0 {
+		return 0, 0, fmt.Errorf("No results found for address: %s", address)
+	}
+
+	// Récupère les coordonnées GPS
+	lat := geoResp.Result[0].Geometry.Location.Lat
+	lng := geoResp.Result[0].Geometry.Location.Lng
+	return lat, lng, nil
+}
+
 func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 	var req struct {
 		OrganizerID     string  `json:"organizer_id" binding:"required"`
@@ -53,6 +99,7 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	// Conversion de la date et de l'heure
 	matchDate, err := time.Parse("2006-01-02", req.MatchDate)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match date format. Use YYYY-MM-DD"})
@@ -81,6 +128,12 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0) // Utiliser une source d'entropie
 	matchID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
+	// Récupérer la latitude et longitude de l'adresse
+	lat, lng, err := getCoordinates(req.Address, "AIzaSyAdNnq6m3qBSXKlKK5gbQJMdbd22OWeHCg")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("Failed to geocode address: %v", err)})
+	}
+
 	// Initialiser les valeurs pour le modèle Matches
 	match := &models.Matches{
 		ID:              matchID,
@@ -91,8 +144,11 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 		Address:         req.Address,
 		NumberOfPlayers: req.NumberOfPlayers,
 		Status:          models.Upcoming,
+		Latitude:        lat,
+		Longitude:       lng,
 	}
 
+	// Gestion de l'arbitre si présent
 	if req.RefereeID != nil {
 		refereeID, err := ulid.Parse(*req.RefereeID)
 		if err != nil {
@@ -102,6 +158,7 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 		match.RefereeID = &refereeIDStr
 	}
 
+	// Créer le match
 	if err := ctrl.MatchService.CreateMatch(match); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
