@@ -35,10 +35,10 @@ func Run() {
     }
 
     // Optional: Create fake users for testing
-    users := models.GenerateFakeUsers(10)
-    for _, user := range users {
-        db.Create(&user)
-    }
+    // users := models.GenerateFakeUsers(10)
+    // for _, user := range users {
+    //     db.Create(&user)
+    // }
 
     // Connect to Redis
     redisClient := redis.NewClient(&redis.Options{
@@ -70,6 +70,9 @@ func Run() {
     }))
 
     // Define routes
+    app.Get("/", func(c *fiber.Ctx) error {
+        return c.SendString("Hello, World!")
+    })
     routes.SetupRoutesAuth(app, authController)
     routes.SetupRoutesMatches(app, matchController)
     routes.SetupRoutesMatchePlayers(app, matchPlayersController)

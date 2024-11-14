@@ -75,7 +75,7 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
         req.Username, req.Email, req.Password, req.ProfilePhoto, req.FavoriteSport,
         req.Location, req.Bio, &birthDate, role, req.SkillLevel, req.Pac, req.Sho,
         req.Pas, req.Dri, req.Def, req.Phy, req.MatchesPlayed, req.MatchesWon,
-		req.GoalsScored, req.BehaviorScore,
+        req.GoalsScored, req.BehaviorScore,
     )
 
     if err != nil {
@@ -85,10 +85,12 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
     return c.Status(fiber.StatusOK).JSON(user)
 }
 
-
 // UserHandler gère la requête pour récupérer les informations de l'utilisateur connecté
 func (ctrl *AuthController) UserHandler(c *fiber.Ctx) error {
-    userID := c.Locals("userID").(string) 
+    userID, ok := c.Locals("user_id").(string)
+    if !ok {
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID"})
+    }
 
     user, err := ctrl.AuthService.GetUserByID(userID)
     if err != nil {
@@ -97,6 +99,8 @@ func (ctrl *AuthController) UserHandler(c *fiber.Ctx) error {
 
     return c.Status(fiber.StatusOK).JSON(user)
 }
+
+// UserUpdate gère la mise à jour des informations de l'utilisateur connecté
 func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
     userID := c.Locals("userID").(string)
     var req struct {
@@ -148,12 +152,23 @@ func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
 
     return c.Status(fiber.StatusOK).JSON(user)
 }
+
+// GetPublicUserInfoHandler gère la requête pour récupérer les informations publiques d'un utilisateur
+func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
+    userID := c.Params("id")
+    publicInfo, err := ctrl.AuthService.GetPublicUserInfo(userID)
+    if err != nil {
+        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+    }
+
+    return c.JSON(publicInfo)
+}
+
 // GoogleLogin redirige l'utilisateur vers la page de connexion Google
 func (ctrl *AuthController) GoogleLogin(c *fiber.Ctx) error {
     url := ctrl.AuthService.GoogleOauthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
     return c.Redirect(url)
 }
-
 
 // GoogleCallback gère le callback de Google après l'authentification
 func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
@@ -201,14 +216,13 @@ func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
     if err != nil {
         return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to parse user ID"})
     }
-    accessToken, err := middlewares.GenerateToken(userID)
+    accessToken, err := middlewares.GenerateToken(userID, user.Role)
     if err != nil {
         return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to generate access token"})
     }
 
     return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": accessToken})
 }
-
 
 // LoginHandler gère la requête de connexion d'un utilisateur
 func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
@@ -233,7 +247,6 @@ func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
 
     return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": accessToken, "refreshToken": refreshToken})
 }
-
 
 // RefreshHandler gère la demande de rafraîchissement du token d'un utilisateur
 func (ctrl *AuthController) RefreshHandler(c *fiber.Ctx) error {

@@ -103,16 +103,16 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	accessToken, err := middlewares.GenerateToken(userID)
-	if err != nil {
-		return "", "", err
-	}
+	accessToken, err := middlewares.GenerateToken(userID, user.Role)
+    if err != nil {
+        return "", "", err
+    }
 
 	userID, err = ulid.Parse(user.ID)
 	if err != nil {
 		return "", "", err
 	}
-	refreshToken, err := middlewares.GenerateRefreshToken(userID)
+	refreshToken, err := middlewares.GenerateRefreshToken(userID, user.Role)
 	if err != nil {
 		return "", "", err
 	}
@@ -208,6 +208,35 @@ func (s *AuthService) UpdateUser(id, username, email, password, profilePhoto, fa
 	return user, nil
 }
 
+func (s *AuthService) GetPublicUserInfo(id string) (map[string]interface{}, error) {
+    var user models.Users
+    if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
+        return nil, err
+    }
+
+    publicInfo := map[string]interface{}{
+        "username":       user.Username,
+        "matchesPlayed":  user.MatchesPlayed,
+        "matchesWon":     user.MatchesWon,
+        "goalsScored":    user.GoalsScored,
+        "behaviorScore":  user.BehaviorScore,
+		"profilePhoto":   user.ProfilePhoto,
+		"favoriteSport":  user.FavoriteSport,
+		"location":       user.Location,
+		"bio":            user.Bio,
+		"skillLevel":     user.SkillLevel,
+		"sho":            user.Sho,
+		"pas":            user.Pas,
+		"dri":            user.Dri,
+		"def":            user.Def,
+		"phy":            user.Phy,
+
+    }
+
+    return publicInfo, nil
+}
+
+
 // Refresh génère un nouveau accessToken à partir d'un refreshToken valide
 func (s *AuthService) Refresh(refreshToken string) (string, error) {
 	claims, err := middlewares.ParseToken(refreshToken)
@@ -219,7 +248,7 @@ func (s *AuthService) Refresh(refreshToken string) (string, error) {
 		return "", errors.New("refresh token expired")
 	}
 
-	accessToken, err := middlewares.GenerateToken(claims.UserID)
+	accessToken, err := middlewares.GenerateToken(claims.UserID, claims.Role)
 	if err != nil {
 		return "", err
 	}

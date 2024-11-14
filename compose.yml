@@ -54,10 +54,21 @@ services:
       - mynetwork
 
   redis:
-    image: redis:latest
+    image: redis:8.0-M01-bookworm
+    restart: "no"
     container_name: redis_container
     ports:
       - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "PING"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
     networks:
       - mynetwork
 
@@ -72,6 +83,7 @@ services:
 volumes:
   dragonflydata: {}
   postgres-test: {}
+  redis-data: {}
 
 networks:
   postgres-network:
