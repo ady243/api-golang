@@ -1,88 +1,88 @@
 package server
 
 import (
-    "log"
-    "os"
+	"log"
+	"os"
 
-    "github.com/ady243/teamup/internal/controllers"
-    "github.com/ady243/teamup/internal/models"
-    "github.com/ady243/teamup/internal/routes"
-    "github.com/ady243/teamup/internal/services"
-    "github.com/ady243/teamup/storage"
-    "github.com/go-redis/redis/v8"
-    "github.com/gofiber/fiber/v2"
-    "github.com/gofiber/fiber/v2/middleware/cors"
-    "github.com/gofiber/fiber/v2/middleware/helmet"
-    "github.com/gofiber/fiber/v2/middleware/limiter"
-    "github.com/joho/godotenv"
+	"github.com/ady243/teamup/internal/controllers"
+	"github.com/ady243/teamup/internal/models"
+	"github.com/ady243/teamup/internal/routes"
+	"github.com/ady243/teamup/internal/services"
+	"github.com/ady243/teamup/storage"
+	"github.com/go-redis/redis/v8"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/joho/godotenv"
 )
 
 func Run() {
-    // Load environment variables
-    if err := godotenv.Load(".env"); err != nil {
-        log.Println("No .env file found", err)
-    }
+	// Load environment variables
+	if err := godotenv.Load(".env"); err != nil {
+		log.Println("No .env file found", err)
+	}
 
-    // Database connection
-    db, err := storage.NewConnection()
-    if err != nil {
-        log.Fatalf("Failed to connect to database: %v", err)
-    }
+	// Database connection
+	db, err := storage.NewConnection()
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
 
-    // Table migration
-    if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}); err != nil {
-        log.Printf("Error migrating database: %v", err)
-    }
+	// Table migration
+	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}); err != nil {
+		log.Printf("Error migrating database: %v", err)
+	}
 
-    // Optional: Create fake users for testing
-    // users := models.GenerateFakeUsers(10)
-    // for _, user := range users {
-    //     db.Create(&user)
-    // }
+	// Optional: Create fake users for testing
+	// users := models.GenerateFakeUsers(10)
+	// for _, user := range users {
+	//     db.Create(&user)
+	// }
 
-    // Connect to Redis
-    redisClient := redis.NewClient(&redis.Options{
-        Addr: os.Getenv("REDIS_ADDR"),
-    })
+	// Connect to Redis
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: os.Getenv("REDIS_ADDR"),
+	})
 
-    // Initialize services and controllers
-    imageService := services.NewImageService("./uploads")
-    authService := services.NewAuthService(db, imageService)
-    authController := controllers.NewAuthController(authService, imageService)
-    matchService := services.NewMatchService(db)
-    openAIService := services.NewOpenAIService()
-    chatService := services.NewChatService(db, redisClient)
-    matchController := controllers.NewMatchController(matchService, authService, db, chatService)
-    matchPlayersService := services.NewMatchPlayersService(db)
-    matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db, openAIService)
-    chatController := controllers.NewChatController(chatService)
+	// Initialize services and controllers
+	imageService := services.NewImageService("./uploads")
+	authService := services.NewAuthService(db, imageService)
+	authController := controllers.NewAuthController(authService, imageService)
+	matchService := services.NewMatchService(db)
+	openAIService := services.NewOpenAIService()
+	chatService := services.NewChatService(db, redisClient)
+	matchController := controllers.NewMatchController(matchService, authService, db, chatService)
+	matchPlayersService := services.NewMatchPlayersService(db)
+	matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db, openAIService)
+	chatController := controllers.NewChatController(chatService)
 
-    // Configure Fiber app
-    app := fiber.New()
-    app.Use(helmet.New())
-    app.Use(cors.New(cors.Config{
-        AllowOrigins: "*",
-        AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-    }))
-    app.Use(limiter.New(limiter.Config{
-        Max:        10,
-        Expiration: 30 * 1000,
-    }))
+	// Configure Fiber app
+	app := fiber.New()
+	app.Use(helmet.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+	}))
+	app.Use(limiter.New(limiter.Config{
+		Max:        10,
+		Expiration: 30 * 1000,
+	}))
 
-    // Define routes
-    app.Get("/", func(c *fiber.Ctx) error {
-        return c.SendString("Hello, World!")
-    })
-    routes.SetupRoutesAuth(app, authController)
-    routes.SetupRoutesMatches(app, matchController)
-    routes.SetupRoutesMatchePlayers(app, matchPlayersController)
-    routes.SetupChatRoutes(app, chatController)
+	// Define routes
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Hello, World!")
+	})
+	routes.SetupRoutesAuth(app, authController)
+	routes.SetupRoutesMatches(app, matchController)
+	routes.SetupRoutesMatchePlayers(app, matchPlayersController)
+	routes.SetupChatRoutes(app, chatController)
 
-    // Start server
-    port := os.Getenv("API_PORT")
-    if port == "" {
-        port = "3003"
-    }
-    log.Printf("Server started on port %s", port)
-    log.Fatal(app.Listen(":" + port))
+	// Start server
+	port := os.Getenv("API_PORT")
+	if port == "" {
+		port = "3003"
+	}
+	log.Printf("Server started on port %s", port)
+	log.Fatal(app.Listen(":" + port))
 }
