@@ -3,8 +3,13 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/ady243/teamup/internal/models"
@@ -12,6 +17,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/joho/godotenv"
 	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
@@ -22,6 +28,17 @@ type MatchController struct {
 	RedisClient  *redis.Client
 	AuthService  *services.AuthService
 	DB           *gorm.DB
+}
+
+type GeoResponse struct {
+	Result []struct {
+		Geometry struct {
+			Location struct {
+				Lat float64 `json:"lat"`
+				Lng float64 `json:"lng"`
+			} `json:"location"`
+		} `json:"geometry"`
+	} `json:"results"`
 }
 
 func NewMatchController(matchService *services.MatchService, authService *services.AuthService, db *gorm.DB, chatService *services.ChatService) *MatchController {
@@ -67,7 +84,43 @@ func (ctrl *MatchController) GetAllMatchesHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(filteredMatches)
 }
 
+func getCoordinates(address, apiKey string) (float64, float64, error) {
+	// URL encode l'adresse
+	address = url.QueryEscape(address)
+
+	// Crée l'URL de requête
+	url := fmt.Sprintf("https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s", address, apiKey)
+
+	// Effectue la requête GET à l'API
+	resp, err := http.Get(url)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer resp.Body.Close()
+
+	// Décode la réponse JSON
+	var geoResp GeoResponse
+	if err := json.NewDecoder(resp.Body).Decode(&geoResp); err != nil {
+		return 0, 0, err
+	}
+
+	// Vérifie si des résultats ont été trouvés
+	if len(geoResp.Result) == 0 {
+		return 0, 0, fmt.Errorf("No results found for address: %s", address)
+	}
+
+	// Récupère les coordonnées GPS
+	lat := geoResp.Result[0].Geometry.Location.Lat
+	lng := geoResp.Result[0].Geometry.Location.Lng
+	return lat, lng, nil
+}
+
 func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file", err)
+	}
+
 	var req struct {
 		OrganizerID     string  `json:"organizer_id" binding:"required"`
 		RefereeID       *string `json:"referee_id"`
@@ -82,6 +135,7 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	// Conversion de la date et de l'heure
 	matchDate, err := time.Parse("2006-01-02", req.MatchDate)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match date format. Use YYYY-MM-DD"})
@@ -108,6 +162,13 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
 	matchID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
+	// Récupérer la latitude et longitude de l'adresse
+	googleApiKey := os.Getenv("GOOGLE_MAPS_API_KEY")
+	lat, lng, err := getCoordinates(req.Address, googleApiKey)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("Failed to geocode address: %v", err)})
+	}
+
 	// Crée un nouveau match avec les informations fournies
 	match := &models.Matches{
 		ID:              matchID,
@@ -118,8 +179,11 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 		Address:         req.Address,
 		NumberOfPlayers: req.NumberOfPlayers,
 		Status:          models.Upcoming,
+		Latitude:        lat,
+		Longitude:       lng,
 	}
 
+	// Gestion de l'arbitre si présent
 	if req.RefereeID != nil {
 		refereeID, err := ulid.Parse(*req.RefereeID)
 		if err != nil {
@@ -129,6 +193,7 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 		match.RefereeID = &refereeIDStr
 	}
 
+	// Créer le match
 	// Enregistre le match dans la base de données
 	if err := ctrl.MatchService.CreateMatch(match); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -165,7 +230,7 @@ func (ctrl *MatchController) GetMatchByIDHandler(c *fiber.Ctx) error {
 
 	matchID, err := ulid.Parse(id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "A) Invalid match ID"})
 	}
 
 	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
@@ -181,7 +246,7 @@ func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 
 	matchID, err := ulid.Parse(id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "B) Invalid match ID"})
 	}
 
 	// Récupérer l'ID de l'utilisateur connecté via le middleware JWT
@@ -262,7 +327,7 @@ func (ctrl *MatchController) DeleteMatchHandler(c *fiber.Ctx) error {
 	// Parse l'ID du match
 	matchID, err := ulid.Parse(id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "C) Invalid match ID"})
 	}
 
 	// Récupère l'ID de l'utilisateur connecté
@@ -359,4 +424,24 @@ func (ctrl *MatchController) AddPlayerToMatchHandler(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "Joined match and chat"})
+}
+
+// Handler pour obtenir les matchs proches
+func (ctrl *MatchController) GetNearbyMatchesHandler(c *fiber.Ctx) error {
+	lat, err := strconv.ParseFloat(c.Query("lat"), 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid latitude"})
+	}
+
+	lon, err := strconv.ParseFloat(c.Query("lon"), 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid longitude"})
+	}
+
+	matches, err := ctrl.MatchService.FindNearbyMatches(lat, lon, 6.0) // La distance de recherche est de 6 km
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(matches)
 }
