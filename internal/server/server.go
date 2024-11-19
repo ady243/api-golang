@@ -47,15 +47,16 @@ func Run() {
 
     // Initialize services and controllers
     imageService := services.NewImageService("./uploads")
-    authService := services.NewAuthService(db, imageService)
+    authService := services.NewAuthService(db, imageService , services.NewEmailService())
     authController := controllers.NewAuthController(authService, imageService)
     matchService := services.NewMatchService(db)
     openAIService := services.NewOpenAIService()
     chatService := services.NewChatService(db, redisClient)
     matchController := controllers.NewMatchController(matchService, authService, db, chatService)
     matchPlayersService := services.NewMatchPlayersService(db)
-    matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db, openAIService)
+    matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db)
     chatController := controllers.NewChatController(chatService)
+    openAiController := controllers.NewOpenAiController(openAIService, matchPlayersService)
 
     // Configure Fiber app
     app := fiber.New()
@@ -68,7 +69,11 @@ func Run() {
         Max:        10,
         Expiration: 30 * 1000,
     }))
-
+    
+    emailUser := os.Getenv("EMAIL_USER")
+    emailPassword := os.Getenv("EMAIL_PASSWORD")
+    log.Printf("Email: %s, Password: %s", emailUser, emailPassword)
+    
     // Define routes
     app.Get("/", func(c *fiber.Ctx) error {
         return c.SendString("Hello, World!")
@@ -77,6 +82,7 @@ func Run() {
     routes.SetupRoutesMatches(app, matchController)
     routes.SetupRoutesMatchePlayers(app, matchPlayersController)
     routes.SetupChatRoutes(app, chatController)
+    routes.SetupOpenAiRoutes(app, openAiController)
 
     // Start server
     port := os.Getenv("API_PORT")
