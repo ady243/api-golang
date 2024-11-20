@@ -72,7 +72,7 @@ func Run() {
 
 	// Define routes
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, World!")
+		return c.SendString("Welcome to TeamUp API!")
 	})
 	routes.SetupRoutesAuth(app, authController)
 	routes.SetupRoutesMatches(app, matchController)
