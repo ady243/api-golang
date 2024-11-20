@@ -19,7 +19,10 @@ type Claims struct {
     jwt.StandardClaims
 }
 
-// GenerateToken génère un nouveau JWT pour un utilisateur donné
+
+// GenerateToken génère un nouveau token JWT pour un utilisateur donné
+//
+// Le token est valable pour 24h.
 func GenerateToken(userID ulid.ULID, role models.Role) (string, error) {
     secretKey := os.Getenv("SECRET_KEY")
     if secretKey == "" {
@@ -38,7 +41,13 @@ func GenerateToken(userID ulid.ULID, role models.Role) (string, error) {
     return token.SignedString([]byte(secretKey))
 }
 
-// ParseToken vérifie le JWT et retourne les claims
+
+// ParseToken décode un token JWT et retourne les claims associés.
+//
+// Cette fonction prend un token JWT (tokenString) en entrée et utilise la clé secrète pour le décoder.
+// Si le token est valide, les claims (informations contenues dans le token) sont retournés.
+// En cas d'erreur, elle retourne une erreur appropriée, comme une clé secrète manquante,
+// un token invalide ou un problème lors du parsing.
 func ParseToken(tokenString string) (*Claims, error) {
     secretKey := os.Getenv("SECRET_KEY")
     if secretKey == "" {
@@ -59,14 +68,18 @@ func ParseToken(tokenString string) (*Claims, error) {
     return nil, errors.New("invalid token")
 }
 
-// GenerateRefreshToken génère un nouveau refreshToken pour un utilisateur donné
+
+// GenerateRefreshToken generates a new refresh token for a given user.
+// The token is valid for 72 hours.
+// It requires a valid SECRET_KEY environment variable.
+// Returns the signed token as a string or an error if the secret key is missing.
 func GenerateRefreshToken(userID ulid.ULID, role models.Role) (string, error) {
     secretKey := os.Getenv("SECRET_KEY")
     if secretKey == "" {
         return "", errors.New("SECRET_KEY not found")
     }
     claims := Claims{
-		UserID: userID,
+        UserID: userID,
         Role:   role,
         StandardClaims: jwt.StandardClaims{
             ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
@@ -78,7 +91,12 @@ func GenerateRefreshToken(userID ulid.ULID, role models.Role) (string, error) {
     return token.SignedString([]byte(secretKey))
 }
 
-// JWTMiddleware vérifie le token JWT dans les requêtes HTTP et ajoute les permissions de l'utilisateur
+
+
+// JWTMiddleware is a middleware that checks for a valid JWT token in the Authorization header of the request.
+// If the token is valid, it extracts the user ID and role from the token and stores them in the Locals of the request.
+// It also extracts the permissions for the given role and stores them in the Locals.
+// If the token is invalid or missing, it returns a 401 status code with an appropriate error message.
 func JWTMiddleware(c *fiber.Ctx) error {
     authHeader := c.Get("Authorization")
     if authHeader == "" {

@@ -20,10 +20,11 @@ type AuthService struct {
 	DB                *gorm.DB
 	GoogleOauthConfig *oauth2.Config
 	ImageService      *ImageService
+	EmailService  *EmailService
 }
 
 // NewAuthService crée une nouvelle instance de AuthService
-func NewAuthService(db *gorm.DB, imageService *ImageService) *AuthService {
+func NewAuthService(db *gorm.DB, imageService *ImageService, emailService *EmailService) *AuthService {
 	googleOauthConfig := &oauth2.Config{
 		ClientID:    os.Getenv("GOOGLE_CLIENT_ID"),
 		RedirectURL: os.Getenv("GOOGLE_REDIRECT_URI"),
@@ -35,6 +36,7 @@ func NewAuthService(db *gorm.DB, imageService *ImageService) *AuthService {
 		DB:                db,
 		GoogleOauthConfig: googleOauthConfig,
 		ImageService:      imageService,
+		EmailService:  emailService,
 	}
 }
 
@@ -47,46 +49,43 @@ func (s *AuthService) GetUserByEmail(email string) (models.Users, error) {
 	return user, nil
 }
 
-// Register enregistre un nouvel utilisateur
-func (s *AuthService) Register(username, email, password, profilePhoto, favoriteSport, location, bio string, birthDate *time.Time, role models.Role, skillLevel string, pac, sho, pas, dri, def, phy, matchesPlayed, matchesWon, goalsScored, behaviorScore int) (models.Users, error) {
+func (s *AuthService) RegisterUser(userInfo models.Users) (models.Users, error) {
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
 	newID := ulid.MustNew(ulid.Timestamp(time.Now()), entropy)
 
-	hashedPassword, err := helpers.HashPassword(password)
+	// Hash le mot de passe
+	hashedPassword, err := helpers.HashPassword(userInfo.PasswordHash)
 	if err != nil {
 		return models.Users{}, err
 	}
 
+	// Générer un jeton de confirmation unique
+	confirmationToken := ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
+
+	// Créer l'utilisateur
 	user := models.Users{
-		ID:            newID.String(),
-		Username:      username,
-		Email:         email,
-		Location:      location,
-		ProfilePhoto:  profilePhoto,
-		Bio:           bio,
-		FavoriteSport: favoriteSport,
-		PasswordHash:  hashedPassword,
-		BirthDate:     birthDate,
-		Role:          role,
-		SkillLevel:    skillLevel,
-		Pac:           pac,
-		Sho:           sho,
-		Pas:           pas,
-		Dri:           dri,
-		Def:           def,
-		Phy:           phy,
-		MatchesPlayed: matchesPlayed,
-		MatchesWon:    matchesWon,
-		GoalsScored:   goalsScored,
-		BehaviorScore: behaviorScore,
+		ID:               newID.String(),
+		Username:         userInfo.Username,
+		Email:            userInfo.Email,
+		PasswordHash:     hashedPassword,
+		IsConfirmed:      false,
+		ConfirmationToken: confirmationToken,
 	}
 
+	// Sauvegarder l'utilisateur dans la base de données
 	if err := s.DB.Create(&user).Error; err != nil {
+		return models.Users{}, err
+	}
+
+	// Envoyer un email de confirmation avec le jeton
+	if err := s.EmailService.SendConfirmationEmail(user.Email, confirmationToken); err != nil {
 		return models.Users{}, err
 	}
 
 	return user, nil
 }
+
+
 
 // Login authentifie un utilisateur et retourne un token JWT et un refreshToken
 func (s *AuthService) Login(email, password string) (string, string, error) {

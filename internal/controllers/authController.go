@@ -12,12 +12,15 @@ import (
     "golang.org/x/oauth2"
 )
 
-// AuthController fournit les gestionnaires pour les opérations d'authentification
+
 type AuthController struct {
     AuthService *services.AuthService
     ImageService *services.ImageService
 }
 
+// NewAuthController creates a new instance of AuthController.
+// It requires an AuthService and an ImageService to handle authentication
+// and image-related operations, respectively.
 func NewAuthController(authService *services.AuthService, imageService *services.ImageService) *AuthController {
     return &AuthController{
         AuthService:  authService,
@@ -25,58 +28,42 @@ func NewAuthController(authService *services.AuthService, imageService *services
     }
 }
 
-// RegisterHandler gère la requête d'enregistrement d'un nouvel utilisateur
+
+// RegisterHandler gère la requête d'inscription d'un utilisateur
+// Les champs suivants sont obligatoires : username, email, password
+// Les champs suivants sont facultatifs : profilePhoto, favoriteSport, bio, location, birthDate, role, skillLevel, pac, sho, pas, dri, def, phy, matchesPlayed, matchesWon, goalsScored, behaviorScore
+// Si le champ role n'est pas fourni, le rôle "Player" est utilisé
+// Si le champ birthDate est fourni, il doit être au format YYYY-MM-DD
+// Si l'inscription est réussie, renvoie le modèle de l'utilisateur en JSON avec un code 200
+// Si une erreur se produit, renvoie une erreur avec un code approprié
 func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
     var req struct {
-        Username      string `json:"username" binding:"required"`
-        Email         string `json:"email" binding:"required"`
-        Password      string `json:"password" binding:"required"`
-        ProfilePhoto  string `json:"profilePhoto"`
-        FavoriteSport string `json:"favoriteSport"`
-        Bio           string `json:"bio"`
-        Location      string `json:"location"`
-        BirthDate     string `json:"birthDate"`
-        Role          string `json:"role"`
-        SkillLevel    string `json:"skillLevel"`
-        Pac           int    `json:"pac"`
-        Sho           int    `json:"sho"`
-        Pas           int    `json:"pas"`
-        Dri           int    `json:"dri"`
-        Def           int    `json:"def"`
-        Phy           int    `json:"phy"`
-        MatchesPlayed int    `json:"matchesPlayed"`
-        MatchesWon    int    `json:"matchesWon"`
-        GoalsScored   int    `json:"goalsScored"`
-        BehaviorScore int    `json:"behaviorScore"`
-        
+        Username string `json:"username" binding:"required"`
+        Email    string `json:"email" binding:"required"`
+        Password string `json:"password" binding:"required"`
+        Location string `json:"location"`
+        Role     string `json:"role"`
     }
 
     if err := c.BodyParser(&req); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
     }
 
-    // Default role to "Player" if not provided
     if req.Role == "" {
         req.Role = "Player"
     }
     role := models.Role(req.Role)
 
-    // Only parse birthDate if it's provided
-    var birthDate time.Time
-    if req.BirthDate != "" {
-        var err error
-        birthDate, err = time.Parse("2006-01-02", req.BirthDate)
-        if err != nil {
-            return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid birth date format. Use YYYY-MM-DD"})
-        }
+    userInfo := models.Users{
+        Username:    req.Username,
+        Email:       req.Email,
+        PasswordHash: req.Password, 
+        Location:    req.Location,
+        Role:        role,
     }
 
-    user, err := ctrl.AuthService.Register(
-        req.Username, req.Email, req.Password, req.ProfilePhoto, req.FavoriteSport,
-        req.Location, req.Bio, &birthDate, role, req.SkillLevel, req.Pac, req.Sho,
-        req.Pas, req.Dri, req.Def, req.Phy, req.MatchesPlayed, req.MatchesWon,
-        req.GoalsScored, req.BehaviorScore,
-    )
+    // Utilisation de RegisterUser à la place de Register
+    user, err := ctrl.AuthService.RegisterUser(userInfo)
 
     if err != nil {
         return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -85,7 +72,10 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
     return c.Status(fiber.StatusOK).JSON(user)
 }
 
+
 // UserHandler gère la requête pour récupérer les informations de l'utilisateur connecté
+// En cas d'erreur, renvoie une erreur 500 avec le message d'erreur
+// En cas de succès, renvoie le modèle de l'utilisateur en JSON avec un code 200
 func (ctrl *AuthController) UserHandler(c *fiber.Ctx) error {
     userID, ok := c.Locals("user_id").(string)
     if !ok {
@@ -100,9 +90,20 @@ func (ctrl *AuthController) UserHandler(c *fiber.Ctx) error {
     return c.Status(fiber.StatusOK).JSON(user)
 }
 
-// UserUpdate gère la mise à jour des informations de l'utilisateur connecté
+
+    // UserUpdate gère la requête pour mettre à jour les informations de l'utilisateur connecté
+    // les champs qui ne sont pas fournis ne sont pas mis à jour
 func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
-    userID := c.Locals("userID").(string)
+    userID := c.Locals("userID")
+    if userID == nil {
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+    }
+
+    userIDStr, ok := userID.(string)
+    if !ok {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Invalid user ID"})
+    }
+
     var req struct {
         Username      string `json:"username"`
         Email         string `json:"email"`
@@ -142,7 +143,7 @@ func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
     role := models.Role(req.Role)
 
     user, err := ctrl.AuthService.UpdateUser(
-        userID, req.Username, req.Email, req.Password, req.ProfilePhoto, req.FavoriteSport,
+        userIDStr, req.Username, req.Email, req.Password, req.ProfilePhoto, req.FavoriteSport,
         req.Location, req.Bio, birthDate, role, req.SkillLevel, req.Pac, req.Sho, req.Pas,
         req.Dri, req.Def, req.Phy, req.MatchesPlayed, req.MatchesWon, req.GoalsScored, req.BehaviorScore,
     )
@@ -153,7 +154,10 @@ func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
     return c.Status(fiber.StatusOK).JSON(user)
 }
 
-// GetPublicUserInfoHandler gère la requête pour récupérer les informations publiques d'un utilisateur
+
+// GetPublicUserInfoHandler gère la requête pour récupérer les informations de l'utilisateur public
+// il prend comme paramètre l'ID de l'utilisateur et renvoie un objet JSON avec les informations
+// de l'utilisateur s'il existe, sinon renvoie un erreur 404
 func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
     userID := c.Params("id")
     publicInfo, err := ctrl.AuthService.GetPublicUserInfo(userID)
@@ -205,7 +209,10 @@ func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
     user, err := ctrl.AuthService.GetUserByEmail(userInfo.Email)
     if err != nil {
         // Si l'utilisateur n'existe pas, créez un nouvel utilisateur
-        user, err = ctrl.AuthService.Register("", userInfo.Email, "", "", "", "", "", nil, models.Role("Player"), "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        user, err = ctrl.AuthService.RegisterUser(models.Users{
+            Email: userInfo.Email,
+            Role:  models.Role("Player"),
+        })
         if err != nil {
             return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to register user"})
         }
@@ -264,4 +271,27 @@ func (ctrl *AuthController) RefreshHandler(c *fiber.Ctx) error {
     }
 
     return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": newAccessToken})
+}
+
+func (ctrl *AuthController) ConfirmEmailHandler(c *fiber.Ctx) error {
+	token := c.Query("token")
+	if token == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Token manquant"})
+	}
+
+
+	var user models.Users
+	if err := ctrl.AuthService.DB.Where("confirmation_token = ?", token).First(&user).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Utilisateur non trouvé"})
+	}
+
+
+	user.IsConfirmed = true
+	user.ConfirmationToken = "" 
+
+	if err := ctrl.AuthService.DB.Save(&user).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Erreur lors de la confirmation de l'email"})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Email confirmé avec succès"})
 }

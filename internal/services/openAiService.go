@@ -34,7 +34,7 @@ func (s *OpenAIService) SuggestFormations(players []models.Users) ([]string, err
 		prompt += fmt.Sprintf("Joueur: %s, Pac: %d, Sho: %d, Pas: %d, Dri: %d, Def: %d, Phy: %d\n",
 			player.Username, player.Pac, player.Sho, player.Pas, player.Dri, player.Def, player.Phy)
 	}
-	prompt += "Donne moi la formation la plus adaptée suivant leurs profil par exemple Formation : 4-4-2. Pour chacun des joueurs de la liste, donne moi sa positions idéale sur le terrain, par exemple : Joueur : Username, Position : Defenseur gauche."
+	prompt += "Donne moi la formation la plus adaptée suivant leurs profil par exemple Formation : 4-4-2. Pour chacun des joueurs de la liste, donne moi sa positions idéale sur le terrain, par exemple : Joueur : Username, Position : Defenseur gauche et autres"
 	// Ici on fait la gestion des erreurs et on initialise la version du modèle à utiliser
 	resp, err := s.client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
 		Model: "gpt-4o-mini",
@@ -48,7 +48,7 @@ func (s *OpenAIService) SuggestFormations(players []models.Users) ([]string, err
 				Content: prompt,
 			},
 		},
-		MaxTokens: 100,
+		MaxTokens: 1000,
 	})
 	if err != nil {
 		log.Printf("Erreur lors de l'appel à l'API OpenAI: %v", err)
