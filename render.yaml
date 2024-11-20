@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: api-golang
+    env: docker
+    buildCommand: "docker build -f Dockerfile.prod -t api-golang ."
+    startCommand: "./api"  
+    envVars:
+      - key: POSTGRES_HOST
+        value: postgres
+      - key: POSTGRES_USER
+        value: ${POSTGRES_USER}
+      - key: POSTGRES_PASSWORD
+        value: ${POSTGRES_PASSWORD}
+      - key: POSTGRES_DB
+        value: ${POSTGRES_DATABASE}
+      - key: GOOGLE_CLIENT_ID
+        value: ${GOOGLE_CLIENT_ID}
+      - key: GOOGLE_CLIENT_SECRET
+        value: ${GOOGLE_CLIENT_SECRET}
+      - key: GOOGLE_REDIRECT_URI
+        value: ${GOOGLE_REDIRECT_URI}
+      - key: OPENAI_API_KEY
+        value: ${OPENAI_API_KEY}
+      - key: EMAIL_PASSWORD
+        value: ${EMAIL_PASSWORD}
+      - key: EMAIL_USER
+        value: ${EMAIL_USER}
+      - key: DRAGONFLY_HOST
+        value: dragonfly
+      - key: DRAGONFLY_PORT
+        value: 6379
+      - key: REDIS_ADDR
+        value: redis:6379
+      - key: REDIS_PASSWORD
+        value: ""
+    plan: free 
+    branches:
+      - main  
+    autoDeploy: true
