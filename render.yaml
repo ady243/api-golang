@@ -3,10 +3,10 @@ services:
     name: api-golang
     env: docker
     buildCommand: "docker build -f Dockerfile.prod -t api-golang ."
-    startCommand: "./api"  
+    startCommand: "./api"
     envVars:
       - key: POSTGRES_HOST
-        value: postgres
+        value: ${POSTGRES_HOST} 
       - key: POSTGRES_USER
         value: ${POSTGRES_USER}
       - key: POSTGRES_PASSWORD
@@ -30,10 +30,10 @@ services:
       - key: DRAGONFLY_PORT
         value: 6379
       - key: REDIS_ADDR
-        value: redis:6379
+        value: red-csv4bldumphs7380ngq0:6379
       - key: REDIS_PASSWORD
         value: ""
-    plan: free 
+    plan: free
     branches:
-      - main  
+      - prod#2
     autoDeploy: true
