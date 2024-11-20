@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+
 	"github.com/go-redis/redis"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -34,14 +35,14 @@ func NewConnection() (*gorm.DB, error) {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 
-	// On fait la connection avec Redis & dragonfly
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")), 
-		Password: os.Getenv("REDIS_PASSWORD"), 
+		Addr:     os.Getenv("REDIS_ADDR"),
+		Password: os.Getenv("REDIS_PASSWORD"),
 	})
-	// On fait la connection avec Redis
+
+	// On fait la connexion avec Redis
 	if _, err := rdb.Ping().Result(); err != nil {
-		log.Fatalf("failed to connect to Dragonfly: %v", err)
+		log.Fatalf("failed to connect to Redis: %v", err)
 	}
 
 	fmt.Println("🚀 Connected to Postgres and Redis")

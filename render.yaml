@@ -25,14 +25,10 @@ services:
         value: ${EMAIL_PASSWORD}
       - key: EMAIL_USER
         value: ${EMAIL_USER}
-      - key: DRAGONFLY_HOST
-        value: dragonfly
-      - key: DRAGONFLY_PORT
-        value: 6379
       - key: REDIS_ADDR
-        value: red-csv4bldumphs7380ngq0:6379
+        value: red-csv4bldumphs7380ngq0:6379  
       - key: REDIS_PASSWORD
-        value: ""
+        value: "" 
     plan: free
     branches:
       - prod#2
