@@ -57,3 +57,7 @@ Dockerfile
 
 # Ignore go.mod
 go.mod
+
+#Ingnore render 
+
+render.yaml

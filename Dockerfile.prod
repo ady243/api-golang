@@ -10,8 +10,17 @@ COPY go.mod go.sum ./
 # Télécharger les dépendances nécessaires
 RUN go mod download
 
+# Installer swag pour générer la documentation Swagger
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
+# Ajouter le répertoire GOPATH/bin au PATH
+ENV PATH="/go/bin:${PATH}"
+
 # Copier tout le code source de l'application
 COPY . .
+
+# Générer la documentation Swagger
+RUN swag init
 
 # Compiler l'application en mode production
 # CGO_ENABLED=0 permet de désactiver les dépendances au système pour rendre l'image plus légère
@@ -28,6 +37,9 @@ WORKDIR /root/
 
 # Copier l'exécutable construit depuis l'image builder
 COPY --from=builder /app/api .
+
+# Copier la documentation Swagger générée depuis l'image builder
+COPY --from=builder /app/docs ./docs
 
 # Exposer le port sur lequel l'application tourne
 EXPOSE 3003

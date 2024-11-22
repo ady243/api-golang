@@ -1,0 +1,391 @@
+definitions:
+  models.Role:
+    enum:
+    - player
+    - referee
+    - administrator
+    type: string
+    x-enum-varnames:
+    - Player
+    - Referee
+    - Administrator
+  models.Users:
+    properties:
+      behavior_score:
+        type: integer
+      bio:
+        type: string
+      birth_date:
+        type: string
+      confirmation_token:
+        type: string
+      def:
+        type: integer
+      deleted_at:
+        type: string
+      dri:
+        type: integer
+      email:
+        type: string
+      favorite_sport:
+        type: string
+      goals_scored:
+        type: integer
+      id:
+        type: string
+      is_confirmed:
+        type: boolean
+      location:
+        type: string
+      matches_played:
+        type: integer
+      matches_won:
+        type: integer
+      pac:
+        type: integer
+      pas:
+        type: integer
+      password_hash:
+        type: string
+      phy:
+        type: integer
+      profile_photo:
+        type: string
+      refresh_token:
+        type: string
+      role:
+        $ref: '#/definitions/models.Role'
+      sho:
+        type: integer
+      skill_level:
+        type: string
+      token_expires_at:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /auth/google:
+    get:
+      description: Rediriger l'utilisateur vers la page de connexion Google
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Found
+          schema:
+            type: string
+      summary: Rediriger l'utilisateur vers la page de connexion Google
+      tags:
+      - Auth
+  /auth/google/callback:
+    get:
+      consumes:
+      - application/json
+      description: Gérer le callback de Google après l'authentification
+      parameters:
+      - description: ID Token
+        in: body
+        name: idToken
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Gérer le callback de Google après l'authentification
+      tags:
+      - Auth
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Connexion d'un utilisateur
+      parameters:
+      - description: Adresse email
+        in: body
+        name: email
+        required: true
+        schema:
+          type: string
+      - description: Mot de passe
+        in: body
+        name: password
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Connexion d'un utilisateur
+      tags:
+      - Auth
+  /refresh:
+    post:
+      consumes:
+      - application/json
+      description: Rafraîchir le token d'un utilisateur
+      parameters:
+      - description: Refresh Token
+        in: body
+        name: refreshToken
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Rafraîchir le token d'un utilisateur
+      tags:
+      - Auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Inscription d'un nouvel utilisateur
+      parameters:
+      - description: Informations de l'utilisateur
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.Users'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Users'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Inscription d'un utilisateur
+      tags:
+      - Auth
+  /userInfo:
+    get:
+      description: Récupérer les informations de l'utilisateur connecté
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Users'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Récupérer les informations de l'utilisateur connecté
+      tags:
+      - Auth
+  /userUpdate:
+    put:
+      consumes:
+      - application/json
+      description: Mettre à jour les informations de l'utilisateur connecté
+      parameters:
+      - description: Nom d'utilisateur
+        in: body
+        name: username
+        schema:
+          type: string
+      - description: Adresse email
+        in: body
+        name: email
+        schema:
+          type: string
+      - description: Mot de passe
+        in: body
+        name: password
+        schema:
+          type: string
+      - description: Photo de profil
+        in: body
+        name: profilePhoto
+        schema:
+          type: string
+      - description: Sport favori
+        in: body
+        name: favoriteSport
+        schema:
+          type: string
+      - description: Biographie
+        in: body
+        name: bio
+        schema:
+          type: string
+      - description: Localisation
+        in: body
+        name: location
+        schema:
+          type: string
+      - description: Date de naissance (YYYY-MM-DD)
+        in: body
+        name: birthDate
+        schema:
+          type: string
+      - description: Rôle
+        in: body
+        name: role
+        schema:
+          type: string
+      - description: Niveau de compétence
+        in: body
+        name: skillLevel
+        schema:
+          type: string
+      - description: Pac
+        in: body
+        name: pac
+        schema:
+          type: integer
+      - description: Sho
+        in: body
+        name: sho
+        schema:
+          type: integer
+      - description: Pas
+        in: body
+        name: pas
+        schema:
+          type: integer
+      - description: Dri
+        in: body
+        name: dri
+        schema:
+          type: integer
+      - description: Def
+        in: body
+        name: def
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Users'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Mettre à jour les informations de l'utilisateur connecté
+      tags:
+      - Auth
+  /users/{id}/public:
+    get:
+      description: Récupérer les informations de l'utilisateur public
+      parameters:
+      - description: ID de l'utilisateur
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Users'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Récupérer les informations de l'utilisateur public
+      tags:
+      - Auth
+swagger: "2.0"

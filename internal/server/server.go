@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	_ "github.com/ady243/teamup/docs"
 	"github.com/ady243/teamup/internal/controllers"
 	"github.com/ady243/teamup/internal/models"
 	"github.com/ady243/teamup/internal/routes"
@@ -15,6 +16,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/joho/godotenv"
+	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
 
 func Run() {
@@ -79,6 +81,8 @@ func Run() {
 	routes.SetupRoutesMatchePlayers(app, matchPlayersController)
 	routes.SetupChatRoutes(app, chatController)
 	routes.SetupOpenAiRoutes(app, openAiController)
+
+	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	// Start server
 	port := os.Getenv("API_PORT")

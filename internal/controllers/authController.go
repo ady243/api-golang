@@ -36,6 +36,18 @@ func NewAuthController(authService *services.AuthService, imageService *services
 // Si le champ birthDate est fourni, il doit être au format YYYY-MM-DD
 // Si l'inscription est réussie, renvoie le modèle de l'utilisateur en JSON avec un code 200
 // Si une erreur se produit, renvoie une erreur avec un code approprié
+
+// RegisterHandler gère la requête d'inscription d'un utilisateur
+// @Summary Inscription d'un utilisateur
+// @Description Inscription d'un nouvel utilisateur
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param user body models.Users true "Informations de l'utilisateur"
+// @Success 200 {object} models.Users
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /register [post]
 func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
     var req struct {
         Username string `json:"username" binding:"required"`
@@ -76,6 +88,17 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 // UserHandler gère la requête pour récupérer les informations de l'utilisateur connecté
 // En cas d'erreur, renvoie une erreur 500 avec le message d'erreur
 // En cas de succès, renvoie le modèle de l'utilisateur en JSON avec un code 200
+
+// UserHandler gère la requête pour récupérer les informations de l'utilisateur connecté
+// @Summary Récupérer les informations de l'utilisateur connecté
+// @Description Récupérer les informations de l'utilisateur connecté
+// @Tags Auth
+// @Security Bearer
+// @Produce json
+// @Success 200 {object} models.Users
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /userInfo [get]
 func (ctrl *AuthController) UserHandler(c *fiber.Ctx) error {
     userID, ok := c.Locals("user_id").(string)
     if !ok {
@@ -93,6 +116,33 @@ func (ctrl *AuthController) UserHandler(c *fiber.Ctx) error {
 
     // UserUpdate gère la requête pour mettre à jour les informations de l'utilisateur connecté
     // les champs qui ne sont pas fournis ne sont pas mis à jour
+
+// UserUpdate gère la requête pour mettre à jour les informations de l'utilisateur connecté
+// @Summary Mettre à jour les informations de l'utilisateur connecté
+// @Description Mettre à jour les informations de l'utilisateur connecté
+// @Tags Auth
+// @Security Bearer
+// @Accept json
+// @Produce json
+// @Param username body string false "Nom d'utilisateur"
+// @Param email body string false "Adresse email"
+// @Param password body string false "Mot de passe"
+// @Param profilePhoto body string false "Photo de profil"
+// @Param favoriteSport body string false "Sport favori"
+// @Param bio body string false "Biographie"
+// @Param location body string false "Localisation"
+// @Param birthDate body string false "Date de naissance (YYYY-MM-DD)"
+// @Param role body string false "Rôle"
+// @Param skillLevel body string false "Niveau de compétence"
+// @Param pac body int false "Pac"
+// @Param sho body int false "Sho"
+// @Param pas body int false "Pas"
+// @Param dri body int false "Dri"
+// @Param def body int false "Def"
+// @Success 200 {object} models.Users
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /userUpdate [put]
 func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
     userID := c.Locals("userID")
     if userID == nil {
@@ -158,6 +208,17 @@ func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
 // GetPublicUserInfoHandler gère la requête pour récupérer les informations de l'utilisateur public
 // il prend comme paramètre l'ID de l'utilisateur et renvoie un objet JSON avec les informations
 // de l'utilisateur s'il existe, sinon renvoie un erreur 404
+
+// GetPublicUserInfoHandler gère la requête pour récupérer les informations de l'utilisateur public
+// @Summary Récupérer les informations de l'utilisateur public
+// @Description Récupérer les informations de l'utilisateur public
+// @Tags Auth
+// @Security Bearer
+// @Produce json
+// @Param id path string true "ID de l'utilisateur"
+// @Success 200 {object} models.Users
+// @Failure 404 {object} map[string]interface{}
+// @Router /users/{id}/public [get]
 func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
     userID := c.Params("id")
     publicInfo, err := ctrl.AuthService.GetPublicUserInfo(userID)
@@ -169,12 +230,33 @@ func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
 }
 
 // GoogleLogin redirige l'utilisateur vers la page de connexion Google
+
+// GoogleLogin redirige l'utilisateur vers la page de connexion Google
+// @Summary Rediriger l'utilisateur vers la page de connexion Google
+// @Description Rediriger l'utilisateur vers la page de connexion Google
+// @Tags Auth
+// @Produce json
+// @Success 302 {string} string
+// @Router /auth/google [get]
 func (ctrl *AuthController) GoogleLogin(c *fiber.Ctx) error {
     url := ctrl.AuthService.GoogleOauthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
     return c.Redirect(url)
 }
 
 // GoogleCallback gère le callback de Google après l'authentification
+
+// GoogleCallback gère le callback de Google après l'authentification
+// @Summary Gérer le callback de Google après l'authentification
+// @Description Gérer le callback de Google après l'authentification
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param idToken body string true "ID Token"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /auth/google/callback [get]
 func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
     var req struct {
         IDToken string `json:"idToken"`
@@ -232,6 +314,19 @@ func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
 }
 
 // LoginHandler gère la requête de connexion d'un utilisateur
+
+// @Summary Connexion d'un utilisateur
+// @Description Connexion d'un utilisateur
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param email body string true "Adresse email"
+// @Param password body string true "Mot de passe"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /login [post]
 func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
     var req struct {
         Email    string `json:"email" binding:"required"`
@@ -256,6 +351,19 @@ func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
 }
 
 // RefreshHandler gère la demande de rafraîchissement du token d'un utilisateur
+
+// RefreshHandler gère la demande de rafraîchissement du token d'un utilisateur
+// @Summary Rafraîchir le token d'un utilisateur
+// @Description Rafraîchir le token d'un utilisateur
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param refreshToken body string true "Refresh Token"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /refresh [post]
 func (ctrl *AuthController) RefreshHandler(c *fiber.Ctx) error {
     var req struct {
         RefreshToken string `json:"refreshToken" binding:"required"`
