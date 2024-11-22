@@ -38,13 +38,13 @@ definitions:
     type: object
   controllers.UserResponse:
     properties:
+      confirmationToken:
+        type: string
       email:
         type: string
       location:
         type: string
       role:
-        $ref: '#/definitions/models.Role'
-      token:
         type: string
       username:
         type: string

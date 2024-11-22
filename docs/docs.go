@@ -873,6 +873,9 @@ const docTemplate = `{
         "controllers.UserResponse": {
             "type": "object",
             "properties": {
+                "confirmationToken": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -880,9 +883,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role": {
-                    "$ref": "#/definitions/models.Role"
-                },
-                "token": {
                     "type": "string"
                 },
                 "username": {

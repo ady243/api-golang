@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"math/rand"
 	"time"
 
 	middlewares "github.com/ady243/teamup/internal/middleware"
@@ -52,11 +53,12 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 	role := models.Role(req.Role)
 
 	userInfo := models.Users{
-		Username:     req.Username,
-		Email:        req.Email,
-		PasswordHash: req.Password,
-		Location:     req.Location,
-		Role:         role,
+		Username:          req.Username,
+		Email:             req.Email,
+		PasswordHash:      req.Password,
+		Location:          req.Location,
+		Role:              role,
+		ConfirmationToken: ulid.MustNew(ulid.Timestamp(time.Now()), ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)).String(),
 	}
 
 	user, err := ctrl.AuthService.RegisterUser(userInfo)
@@ -67,10 +69,11 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 
 	// Créer une réponse personnalisée
 	userResponse := UserResponse{
-		Username: user.Username,
-		Email:    user.Email,
-		Location: user.Location,
-		Role:     user.Role,
+		Username:          user.Username,
+		Email:             user.Email,
+		Location:          user.Location,
+		Role:              string(user.Role),
+		ConfirmationToken: user.ConfirmationToken,
 	}
 
 	return c.Status(fiber.StatusOK).JSON(userResponse)
@@ -87,11 +90,11 @@ type RegisterRequest struct {
 
 // UserResponse représente la réponse de l'inscription d'un utilisateur
 type UserResponse struct {
-	Username          string      `json:"username"`
-	Email             string      `json:"email"`
-	Location          string      `json:"location"`
-	Role              models.Role `json:"role"`
-	ConfirmationToken string      `json:"token"`
+	Username          string `json:"username"`
+	Email             string `json:"email"`
+	Location          string `json:"location"`
+	Role              string `json:"role"`
+	ConfirmationToken string `json:"confirmationToken"`
 }
 
 // UserHandler gère la requête pour récupérer les informations de l'utilisateur connecté

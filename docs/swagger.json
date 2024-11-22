@@ -843,6 +843,9 @@
         "controllers.UserResponse": {
             "type": "object",
             "properties": {
+                "confirmationToken": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -850,9 +853,6 @@
                     "type": "string"
                 },
                 "role": {
-                    "$ref": "#/definitions/models.Role"
-                },
-                "token": {
                     "type": "string"
                 },
                 "username": {
