@@ -50,6 +50,14 @@ func NewMatchController(matchService *services.MatchService, authService *servic
 	}
 }
 
+// @Summary GetAllMatches
+// @Description Get all matches
+// @Tags Matches
+// @Accept json
+// @Produce json
+// @Success 200 {object} []models.Matches
+// @Failure 500 {object} fiber.Map {"error": "Could not retrieve matches"}
+// @Router /api/matches [get]
 func (ctrl *MatchController) GetAllMatchesHandler(c *fiber.Ctx) error {
 	// Appelle le service pour récupérer tous les matchs
 	matches, err := ctrl.MatchService.GetAllMatches()
@@ -84,6 +92,12 @@ func (ctrl *MatchController) GetAllMatchesHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(filteredMatches)
 }
 
+// Fonction pour obtenir les coordonnées GPS à partir d'une adresse
+// @param address: Adresse à géocoder
+// @param apiKey: Clé API Google Maps
+// @return lat: Latitude
+// @return lng: Longitude
+// @return error: Erreur si la géolocalisation a échoué
 func getCoordinates(address, apiKey string) (float64, float64, error) {
 	// URL encode l'adresse
 	address = url.QueryEscape(address)
@@ -106,7 +120,7 @@ func getCoordinates(address, apiKey string) (float64, float64, error) {
 
 	// Vérifie si des résultats ont été trouvés
 	if len(geoResp.Result) == 0 {
-		return 0, 0, fmt.Errorf("No results found for address: %s", address)
+		return 0, 0, fmt.Errorf("no results found for address: %s", address)
 	}
 
 	// Récupère les coordonnées GPS
@@ -115,6 +129,20 @@ func getCoordinates(address, apiKey string) (float64, float64, error) {
 	return lat, lng, nil
 }
 
+// @Tags Matches
+// @Accept json
+// @Produce json
+// @Param organizer_id body string true "Organizer ID"
+// @Param referee_id body string false "Referee ID"
+// @Param description body string false "Description"
+// @Param match_date body string true "Match Date"
+// @Param match_time body string true "Match Time"
+// @Param address body string true "Address"
+// @Param number_of_players body int true "Number of Players"
+// @Success 201 {object} models.Matches
+// @Failure 400 {object} fiber.Map {"error": "Invalid request"}
+// @Failure 500 {object} fiber.Map {"error": "Could not create match"}
+// @Router /api/matches [p
 func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -225,6 +253,16 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(matchWithOrganizer)
 }
 
+// @Summary GetMatchByID
+// @Description Get a match by its ID
+// @Tags Matches
+// @Accept json
+// @Produce json
+// @Param id path string true "Match ID"
+// @Success 200 {object} models.Matches
+// @Failure 404 {object} fiber.Map {"error": "Match not found"}
+// @Failure 400 {object} fiber.Map {"error": "Invalid match ID"}
+// @Router /api/matches/{id} [get]
 func (ctrl *MatchController) GetMatchByIDHandler(c *fiber.Ctx) error {
 	id := c.Params("id")
 
@@ -241,6 +279,24 @@ func (ctrl *MatchController) GetMatchByIDHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(match)
 }
 
+// @Summary UpdateMatch
+// @Description Update a match
+// @Tags Matches
+// @Accept json
+// @Produce json
+// @Param id path string true "Match ID"
+// @Param referee_id body string false "Referee ID"
+// @Param description body string false "Description"
+// @Param match_date body string false "Match Date"
+// @Param match_time body string false "Match Time"
+// @Param address body string false "Address"
+// @Param number_of_players body int false "Number of Players"
+// @Param status body string false "Status"
+// @Success 200 {object} models.Matches
+// @Failure 404 {object} fiber.Map {"error": "Match not found"}
+// @Failure 400 {object} fiber.Map {"error": "Invalid match ID"}
+// @Failure 401 {object} fiber.Map {"error": "You are not authorized to update this match"}
+// @Router /api/matches/{id} [put]
 func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 	id := c.Params("id")
 
@@ -320,6 +376,16 @@ func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(match)
 }
 
+// @Summary DeleteMatch
+// @Description Delete a match
+// @Tags Matches
+// @Accept json
+// @Produce json
+// @Param id path string true "Match ID"
+// @Success 204 {object} string ""
+// @Failure 404 {object} fiber.Map {"error": "Match not found"}
+// @Failure 401 {object} fiber.Map {"error": "You are not authorized to delete this match"}
+// @Router /api/matches/{id} [delete]
 func (ctrl *MatchController) DeleteMatchHandler(c *fiber.Ctx) error {
 	id := c.Params("id")
 	log.Println("Match ID:", id)
@@ -352,6 +418,13 @@ func (ctrl *MatchController) DeleteMatchHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
+// @Summary ChatWebSocketHandler
+// @Description Handle WebSocket connections for chat
+// @Tags Matches
+// @Accept json
+// @Produce json
+// @Param id path string true "Match ID"
+// @Router /api/matches/{id}/chat [get]
 func (ctrl *MatchController) ChatWebSocketHandler(c *websocket.Conn) {
 	matchID := c.Params("id")
 	userID := c.Locals("user_id").(string)
@@ -404,6 +477,17 @@ func (ctrl *MatchController) ChatWebSocketHandler(c *websocket.Conn) {
 	}
 }
 
+// @Summary AddPlayerToMatch
+// @Description Add a player to a match
+// @Tags Matches
+// @Accept json
+// @Produce json
+// @Param id path string true "Match ID"
+// @Success 200 {object} fiber.Map {"status": "Joined match and chat"}
+// @Failure 400 {object} fiber.Map {"error": "Could not join match"}
+// @Failure 409 {object} fiber.Map {"error": "User already in match"}
+// @Failure 500 {object} fiber.Map {"error": "Could not join chat"}
+// @Router /api/matches/{id}/join [post]
 func (ctrl *MatchController) AddPlayerToMatchHandler(c *fiber.Ctx) error {
 	matchID := c.Params("id")
 	userID := c.Locals("user_id").(string) // Assurez-vous que l'ID utilisateur est disponible dans le contexte
@@ -426,7 +510,18 @@ func (ctrl *MatchController) AddPlayerToMatchHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "Joined match and chat"})
 }
 
-// Handler pour obtenir les matchs proches
+// @Summary GetNearbyMatches
+// @Description Get nearby matches
+// @Tags Matches
+// @Accept json
+// @Produce json
+// @Param lat query float64 true "Latitude"
+// @Param lon query float64 true "Longitude"
+// @Success 200 {object} []models.Matches
+// @Failure 400 {object} fiber.Map {"error": "Invalid latitude"}
+// @Failure 400 {object} fiber.Map {"error": "Invalid longitude"}
+// @Failure 500 {object} fiber.Map {"error": "Could not retrieve nearby matches"}
+// @Router /api/matches/nearby [get]
 func (ctrl *MatchController) GetNearbyMatchesHandler(c *fiber.Ctx) error {
 	lat, err := strconv.ParseFloat(c.Query("lat"), 64)
 	if err != nil {

@@ -18,7 +18,7 @@ import (
 )
 
 func NewAuthService(db *gorm.DB) *services.AuthService {
-	return services.NewAuthService(db)
+	return services.NewAuthService(db, services.NewImageService("./uploads"), services.NewEmailService())
 }
 
 func setupTestDB() *gorm.DB {
