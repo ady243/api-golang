@@ -13,16 +13,22 @@ import (
 // @Tags Auth
 func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api := app.Group("/api")
+
+	// Routes that do not require authentication
 	api.Post("/register", controller.RegisterHandler)
 	api.Post("/login", controller.LoginHandler)
 	api.Post("/refresh", controller.RefreshHandler)
-	api.Get("/userInfo", middlewares.JWTMiddleware, controller.UserHandler)
-	api.Delete("/delteMyAccount", middlewares.JWTMiddleware,controller.DeleteUserHandler)
-	api.Put("/userUpdate", middlewares.JWTMiddleware, controller.UserUpdate)
-	api.Get("/users/:id/public", middlewares.JWTMiddleware, controller.GetPublicUserInfoHandler)
 	api.Get("/auth/google", controller.GoogleLogin)
 	api.Get("/auth/google/callback", controller.GoogleCallback)
 	api.Get("/confirm_email", controller.ConfirmEmailHandler)
+
+	// Routes that require authenticationdeja
+
+	api.Use(middlewares.JWTMiddleware)
+	api.Get("/userInfo", controller.UserHandler)
+	api.Delete("/deleteMyAccount", controller.DeleteUserHandler)
+	api.Put("/userUpdate", controller.UserUpdate)
+	api.Get("/users/:id/public", controller.GetPublicUserInfoHandler)
 }
 
 // SetupRoutesMatches sets up the routes for managing matches.
@@ -31,7 +37,11 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 // @Tags Matches
 func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController) {
 	api := app.Group("/api/matches")
+
+	// Routes that do not require authentication
 	api.Get("/nearby", controller.GetNearbyMatchesHandler)
+
+	// Routes that require authentication
 	api.Use(middlewares.JWTMiddleware)
 	api.Get("/", controller.GetAllMatchesHandler)
 	api.Post("/", controller.CreateMatchHandler)
@@ -40,7 +50,6 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
 	api.Delete("/:id", controller.DeleteMatchHandler)
 	api.Post("/:id/join", controller.AddPlayerToMatchHandler)
 	api.Get("/:id/chat", websocket.New(controller.ChatWebSocketHandler))
-
 }
 
 // SetupRoutesMatchePlayers sets up the routes for managing match players.
@@ -49,6 +58,9 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
 // @Tags MatchPlayers
 func SetupRoutesMatchePlayers(app *fiber.App, controller *controllers.MatchPlayersController) {
 	api := app.Group("/api/matchesPlayers")
+
+	// Routes that require authentication
+	api.Use(middlewares.JWTMiddleware)
 	api.Get("/:match_id", controller.GetMatchPlayersByMatchIDHandler)
 	api.Post("/", controller.CreateMatchPlayerHandler)
 	api.Put("/assignTeam", controller.AssignTeamToPlayerHandler)
@@ -61,6 +73,8 @@ func SetupRoutesMatchePlayers(app *fiber.App, controller *controllers.MatchPlaye
 // @Tags Chat
 func SetupChatRoutes(app *fiber.App, controller *controllers.ChatController) {
 	api := app.Group("/api")
+
+	// Routes that require authentication
 	api.Use(middlewares.JWTMiddleware)
 	api.Post("/chat/send", controller.SendMessage)
 	api.Get("/chat/:matchID", controller.GetMessages)
@@ -72,6 +86,8 @@ func SetupChatRoutes(app *fiber.App, controller *controllers.ChatController) {
 // @Tags OpenAI
 func SetupOpenAiRoutes(app *fiber.App, controller *controllers.OpenAiController) {
 	api := app.Group("/api")
+
+	// Routes that require authentication
 	api.Use(middlewares.JWTMiddleware)
 	api.Get("/openai/formation/:match_id", controller.GetFormationFromAi)
 }
