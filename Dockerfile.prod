@@ -41,6 +41,9 @@ COPY --from=builder /app/api .
 # Copier la documentation Swagger générée depuis l'image builder
 COPY --from=builder /app/docs ./docs
 
+# Lister les fichiers dans le répertoire docs pour vérifier qu'ils sont bien copiés
+RUN ls -la ./docs
+
 # Exposer le port sur lequel l'application tourne
 EXPOSE 3003
 
