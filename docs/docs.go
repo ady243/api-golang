@@ -2,7 +2,6 @@
 package docs
 
 import "github.com/swaggo/swag"
-
 // @title TeamUp API
 // @version 1.0
 // @description This is a sample server for TeamUp.
@@ -882,6 +881,9 @@ const docTemplate = `{
                 },
                 "role": {
                     "$ref": "#/definitions/models.Role"
+                },
+                "token": {
+                    "type": "string"
                 },
                 "username": {
                     "type": "string"

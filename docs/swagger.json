@@ -852,6 +852,9 @@
                 "role": {
                     "$ref": "#/definitions/models.Role"
                 },
+                "token": {
+                    "type": "string"
+                },
                 "username": {
                     "type": "string"
                 }
