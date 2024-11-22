@@ -285,14 +285,18 @@ func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": accessToken})
 }
 
+type LoginRequest struct {
+    Email    string `json:"email" binding:"required"`
+    Password string `json:"password" binding:"required"`
+}
+
 // LoginHandler gère la requête de connexion d'un utilisateur
 // @Summary Connexion d'un utilisateur
 // @Description Connexion d'un utilisateur
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param email body string true "Adresse email"
-// @Param password body string true "Mot de passe"
+// @Param login body LoginRequest true "Email et mot de passe"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}

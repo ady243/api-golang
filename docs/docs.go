@@ -212,21 +212,12 @@ const docTemplate = `{
                 "summary": "Connexion d'un utilisateur",
                 "parameters": [
                     {
-                        "description": "Adresse email",
-                        "name": "email",
+                        "description": "Email et mot de passe",
+                        "name": "login",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Mot de passe",
-                        "name": "password",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/controllers.LoginRequest"
                         }
                     }
                 ],
@@ -768,6 +759,21 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
                     "type": "string"
                 }
             }

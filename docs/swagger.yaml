@@ -4,6 +4,16 @@ definitions:
       error:
         type: string
     type: object
+  controllers.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
   controllers.SuccessResponse:
     properties:
       status:
@@ -206,18 +216,12 @@ paths:
       - application/json
       description: Connexion d'un utilisateur
       parameters:
-      - description: Adresse email
+      - description: Email et mot de passe
         in: body
-        name: email
+        name: login
         required: true
         schema:
-          type: string
-      - description: Mot de passe
-        in: body
-        name: password
-        required: true
-        schema:
-          type: string
+          $ref: '#/definitions/controllers.LoginRequest'
       produces:
       - application/json
       responses:
