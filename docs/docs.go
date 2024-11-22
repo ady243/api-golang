@@ -197,7 +197,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/deleteUser": {
+        "/api/deleteMyAccount": {
             "delete": {
                 "security": [
                     {

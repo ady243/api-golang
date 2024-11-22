@@ -186,7 +186,7 @@
                 }
             }
         },
-        "/api/deleteUser": {
+        "/api/deleteMyAccount": {
             "delete": {
                 "security": [
                     {

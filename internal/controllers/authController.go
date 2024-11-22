@@ -404,7 +404,7 @@ func (ctrl *AuthController) ConfirmEmailHandler(c *fiber.Ctx) error {
 // @Success 200 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
-// @Router /api/deleteUser [delete]
+// @Router /api/deleteMyAccount [delete]
 func (ctrl *AuthController) DeleteUserHandler(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(string)
 	if !ok {
@@ -416,5 +416,5 @@ func (ctrl *AuthController) DeleteUserHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Utilisateur supprimé avec успé"})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Utilisateur supprimé avec succès"})
 }

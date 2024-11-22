@@ -238,7 +238,7 @@ paths:
       summary: SendMessage
       tags:
       - Chat
-  /api/deleteUser:
+  /api/deleteMyAccount:
     delete:
       description: Supprimer un utilisateur
       produces:
