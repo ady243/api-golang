@@ -260,7 +260,7 @@ paths:
             additionalProperties: true
             type: object
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Supprimer un utilisateur
       tags:
       - Auth
@@ -496,7 +496,7 @@ paths:
             additionalProperties: true
             type: object
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Récupérer les informations de l'utilisateur connecté
       tags:
       - Auth
@@ -599,7 +599,7 @@ paths:
             additionalProperties: true
             type: object
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Mettre à jour les informations de l'utilisateur connecté
       tags:
       - Auth
@@ -625,7 +625,7 @@ paths:
             additionalProperties: true
             type: object
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Récupérer les informations de l'utilisateur public
       tags:
       - Auth

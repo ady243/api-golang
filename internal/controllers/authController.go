@@ -97,7 +97,7 @@ type UserResponse struct {
 // @Summary Récupérer les informations de l'utilisateur connecté
 // @Description Récupérer les informations de l'utilisateur connecté
 // @Tags Auth
-// @Security Bearer
+// @Security BearerAuth
 // @Produce json
 // @Success 200 {object} models.Users
 // @Failure 401 {object} map[string]interface{}
@@ -121,7 +121,7 @@ func (ctrl *AuthController) UserHandler(c *fiber.Ctx) error {
 // @Summary Mettre à jour les informations de l'utilisateur connecté
 // @Description Mettre à jour les informations de l'utilisateur connecté
 // @Tags Auth
-// @Security Bearer
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param username body string false "Nom d'utilisateur"
@@ -208,7 +208,7 @@ func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
 // @Summary Récupérer les informations de l'utilisateur public
 // @Description Récupérer les informations de l'utilisateur public
 // @Tags Auth
-// @Security Bearer
+// @Security BearerAuth
 // @Produce json
 // @Param id path string true "ID de l'utilisateur"
 // @Success 200 {object} models.Users
@@ -399,7 +399,7 @@ func (ctrl *AuthController) ConfirmEmailHandler(c *fiber.Ctx) error {
 // @Summary Supprimer un utilisateur
 // @Description Supprimer un utilisateur
 // @Tags Auth
-// @Security Bearer
+// @Security BearerAuth
 // @Produce json
 // @Success 200 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
