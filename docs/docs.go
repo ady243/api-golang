@@ -197,6 +197,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/deleteUser": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Supprimer un utilisateur",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Supprimer un utilisateur",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/login": {
             "post": {
                 "description": "Connexion d'un utilisateur",
@@ -489,7 +529,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Users"
+                            "$ref": "#/definitions/controllers.UserResponse"
                         }
                     },
                     "400": {
@@ -807,6 +847,23 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.UserResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/models.Role"
+                },
+                "username": {
                     "type": "string"
                 }
             }

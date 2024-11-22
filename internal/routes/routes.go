@@ -17,7 +17,7 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Post("/login", controller.LoginHandler)
 	api.Post("/refresh", controller.RefreshHandler)
 	api.Get("/userInfo", middlewares.JWTMiddleware, controller.UserHandler)
-	api.Post("/deleteUser", controller.DeleteUserHandler)
+	api.Delete("/deleteUser", controller.DeleteUserHandler)
 	api.Put("/userUpdate", middlewares.JWTMiddleware, controller.UserUpdate)
 	api.Get("/users/:id/public", middlewares.JWTMiddleware, controller.GetPublicUserInfoHandler)
 	api.Get("/auth/google", controller.GoogleLogin)

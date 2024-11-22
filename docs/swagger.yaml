@@ -36,6 +36,17 @@ definitions:
       status:
         type: string
     type: object
+  controllers.UserResponse:
+    properties:
+      email:
+        type: string
+      location:
+        type: string
+      role:
+        $ref: '#/definitions/models.Role'
+      username:
+        type: string
+    type: object
   models.Role:
     enum:
     - player
@@ -227,6 +238,32 @@ paths:
       summary: SendMessage
       tags:
       - Chat
+  /api/deleteUser:
+    delete:
+      description: Supprimer un utilisateur
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Supprimer un utilisateur
+      tags:
+      - Auth
   /api/login:
     post:
       consumes:
@@ -424,7 +461,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Users'
+            $ref: '#/definitions/controllers.UserResponse'
         "400":
           description: Bad Request
           schema:

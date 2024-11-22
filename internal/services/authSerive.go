@@ -78,7 +78,7 @@ func (s *AuthService) RegisterUser(userInfo models.Users) (models.Users, error) 
 	}
 
 	// Envoyer un email de confirmation avec le jeton
-	if err := s.EmailService.SendConfirmationEmail(user.Email, confirmationToken); err != nil {
+	if err := s.EmailService.SendConfirmationEmail(user.Email); err != nil {
 		return models.Users{}, err
 	}
 

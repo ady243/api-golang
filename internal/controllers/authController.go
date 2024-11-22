@@ -35,7 +35,7 @@ func NewAuthController(authService *services.AuthService, imageService *services
 // @Accept json
 // @Produce json
 // @Param user body RegisterRequest true "Informations de l'utilisateur"
-// @Success 200 {object} models.Users
+// @Success 200 {object} UserResponse
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /api/register [post]
@@ -54,7 +54,7 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 	userInfo := models.Users{
 		Username:     req.Username,
 		Email:        req.Email,
-		PasswordHash: req.Password, // This will be hashed by the AuthService
+		PasswordHash: req.Password,
 		Location:     req.Location,
 		Role:         role,
 	}
@@ -65,7 +65,15 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(map[string]interface{}{"error": err.Error()})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(user)
+	// Créer une réponse personnalisée
+	userResponse := UserResponse{
+		Username: user.Username,
+		Email:    user.Email,
+		Location: user.Location,
+		Role:     user.Role,
+	}
+
+	return c.Status(fiber.StatusOK).JSON(userResponse)
 }
 
 // RegisterRequest représente le corps de la requête d'inscription
@@ -75,6 +83,14 @@ type RegisterRequest struct {
 	Password string `json:"password" binding:"required"`
 	Location string `json:"location"`
 	Role     string `json:"role"`
+}
+
+// UserResponse représente la réponse de l'inscription d'un utilisateur
+type UserResponse struct {
+	Username string      `json:"username"`
+	Email    string      `json:"email"`
+	Location string      `json:"location"`
+	Role     models.Role `json:"role"`
 }
 
 // UserHandler gère la requête pour récupérer les informations de l'utilisateur connecté

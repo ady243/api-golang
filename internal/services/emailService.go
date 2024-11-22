@@ -1,16 +1,19 @@
 package services
 
 import (
-	"bytes"
-	"net/smtp"
-	"os"
-	"text/template"
+    "bytes"
+    "net/smtp"
+    "os"
+    "text/template"
+    "time"
+
+    "github.com/dgrijalva/jwt-go"
 )
 
 type EmailService struct{}
 
 func NewEmailService() *EmailService {
-	return &EmailService{}
+    return &EmailService{}
 }
 
 const emailTemplate = `
@@ -44,60 +47,60 @@ const emailTemplate = `
             cursor: pointer;
             width: 300px;
             height: 40px;
-			justify-content: center;
-			align-items: center;
-			text-align: center;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
         }
 
-		.button-container {
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			text-align: center;
-		}
+        .button-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
 
-		.button:hover {
-			background-color: #018966;
-		}
+        .button:hover {
+            background-color: #018966;
+        }
 
-		.button a {
-			text-decoration: none;
-			font-weight: bold;
-			font-size: 38px;
-		}
+        .button a {
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 38px;
+        }
 
-		p{
-			font-size: 18px;
-		}
-		
-		.button-text {
-			font-weight: bold;
-			font-size: 18px;
-		}
-		
-		h1 {
-			text-decoration: none;
-			font-size: 20px;
-		}
-		
-		h2 {
-			text-decoration: none;
-		}
+        p{
+            font-size: 18px;
+        }
+        
+        .button-text {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        h1 {
+            text-decoration: none;
+            font-size: 20px;
+        }
+        
+        h2 {
+            text-decoration: none;
+        }
 
-		
+        
 
-		
+        
     </style>
 </head>
 <body>
     <div class="container">
             <h2>Bonjour {{.ToEmail}},</h2>
         <h3>Bienvenue sur TeamUp 💫😁️!</h3>
-		<p>Pour continuer l'aventure avec TeamUp️ ⚽️, veuillez confirmer votre compte en cliquant sur le bouton ci-dessous ⌛.</p>
-		<div class="button-container">
-		        <a href="https://api-teamup.onrender.com/api/confirm_email?token={{.Token}}" class="button">
-				<span class="button-text">Confirmer mon compte</span></a>
-		</div>
+        <p>Pour continuer l'aventure avec TeamUp️ ⚽️, veuillez confirmer votre compte en cliquant sur le bouton ci-dessous ⌛.</p>
+        <div class="button-container">
+                <a href="https://api-teamup.onrender.com/api/confirm_email?token={{.Token}}" class="button">
+                <span class="button-text">Confirmer mon compte</span></a>
+        </div>
 
     </div>
 </body>
@@ -105,57 +108,78 @@ const emailTemplate = `
 `
 
 type EmailData struct {
-	ToEmail string
-	Subject string
-	Token   string
+    ToEmail string
+    Subject string
+    Token   string
 }
 
-// SendConfirmationEmail sends an email to a user with a confirmation link
+// GenerateJWT génère un jeton JWT
+func GenerateJWT(toEmail string) (string, error) {
+    secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+        "email": toEmail,
+        "exp":   time.Now().Add(24 * time.Hour).Unix(),
+    })
+
+    tokenString, err := token.SignedString(secretKey)
+    if err != nil {
+        return "", err
+    }
+
+    return tokenString, nil
+}
+
+// SendConfirmationEmail envoie un email de confirmation à un utilisateur avec un lien de confirmation
 //
-// It will send an email to the given email address with a link to confirm their account.
-// The link will contain a token that can be used to confirm the account.
+// Il enverra un email à l'adresse email donnée avec un lien pour confirmer leur compte.
+// Le lien contiendra un jeton qui peut être utilisé pour confirmer le compte.
 //
-// Parameters:
-// - toEmail: the email address of the user to send the confirmation email to
-// - token: the token to include in the confirmation link
+// Paramètres:
+// - toEmail: l'adresse email de l'utilisateur à qui envoyer l'email de confirmation
 //
-// Returns:
-// - error: an error if the email could not be sent, nil otherwise
-func (e *EmailService) SendConfirmationEmail(toEmail, token string) error {
-	from := os.Getenv("EMAIL_USER")
-	password := os.Getenv("EMAIL_PASSWORD")
-	host := "smtp.gmail.com"
-	port := "587"
+// Retourne:
+// - error: une erreur si l'email n'a pas pu être envoyé, nil sinon
+func (e *EmailService) SendConfirmationEmail(toEmail string) error {
+    from := os.Getenv("EMAIL_USER")
+    password := os.Getenv("EMAIL_PASSWORD")
+    host := "smtp.gmail.com"
+    port := "587"
 
-	auth := smtp.PlainAuth("", from, password, host)
-	subject := "Confirmez votre compte"
+    auth := smtp.PlainAuth("", from, password, host)
+    subject := "Confirmez votre compte"
 
-	data := EmailData{
-		ToEmail: toEmail,
-		Subject: subject,
-		Token:   token,
-	}
+    // Générer un jeton JWT
+    token, err := GenerateJWT(toEmail)
+    if err != nil {
+        return err
+    }
 
-	tmpl, err := template.New("email").Parse(emailTemplate)
-	if err != nil {
-		return err
-	}
+    data := EmailData{
+        ToEmail: toEmail,
+        Subject: subject,
+        Token:   token,
+    }
 
-	var body bytes.Buffer
-	if err := tmpl.Execute(&body, data); err != nil {
-		return err
-	}
+    tmpl, err := template.New("email").Parse(emailTemplate)
+    if err != nil {
+        return err
+    }
 
-	msg := []byte("To: " + toEmail + "\r\n" +
-		"Subject: " + subject + "\r\n" +
-		"MIME-version: 1.0;\r\n" +
-		"Content-Type: text/html; charset=\"UTF-8\";\r\n\r\n" +
-		body.String())
+    var body bytes.Buffer
+    if err := tmpl.Execute(&body, data); err != nil {
+        return err
+    }
 
-	err = smtp.SendMail(host+":"+port, auth, from, []string{toEmail}, msg)
-	if err != nil {
-		return err
-	}
+    msg := []byte("To: " + toEmail + "\r\n" +
+        "Subject: " + subject + "\r\n" +
+        "MIME-version: 1.0;\r\n" +
+        "Content-Type: text/html; charset=\"UTF-8\";\r\n\r\n" +
+        body.String())
 
-	return nil
+    err = smtp.SendMail(host+":"+port, auth, from, []string{toEmail}, msg)
+    if err != nil {
+        return err
+    }
+
+    return nil
 }
