@@ -87,10 +87,11 @@ type RegisterRequest struct {
 
 // UserResponse représente la réponse de l'inscription d'un utilisateur
 type UserResponse struct {
-	Username string      `json:"username"`
-	Email    string      `json:"email"`
-	Location string      `json:"location"`
-	Role     models.Role `json:"role"`
+	Username          string      `json:"username"`
+	Email             string      `json:"email"`
+	Location          string      `json:"location"`
+	Role              models.Role `json:"role"`
+	ConfirmationToken string      `json:"token"`
 }
 
 // UserHandler gère la requête pour récupérer les informations de l'utilisateur connecté
