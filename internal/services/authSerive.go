@@ -20,7 +20,7 @@ type AuthService struct {
 	DB                *gorm.DB
 	GoogleOauthConfig *oauth2.Config
 	ImageService      *ImageService
-	EmailService  *EmailService
+	EmailService      *EmailService
 }
 
 // NewAuthService crée une nouvelle instance de AuthService
@@ -36,7 +36,7 @@ func NewAuthService(db *gorm.DB, imageService *ImageService, emailService *Email
 		DB:                db,
 		GoogleOauthConfig: googleOauthConfig,
 		ImageService:      imageService,
-		EmailService:  emailService,
+		EmailService:      emailService,
 	}
 }
 
@@ -64,11 +64,11 @@ func (s *AuthService) RegisterUser(userInfo models.Users) (models.Users, error) 
 
 	// Créer l'utilisateur
 	user := models.Users{
-		ID:               newID.String(),
-		Username:         userInfo.Username,
-		Email:            userInfo.Email,
-		PasswordHash:     hashedPassword,
-		IsConfirmed:      false,
+		ID:                newID.String(),
+		Username:          userInfo.Username,
+		Email:             userInfo.Email,
+		PasswordHash:      hashedPassword,
+		IsConfirmed:       false,
 		ConfirmationToken: confirmationToken,
 	}
 
@@ -84,8 +84,6 @@ func (s *AuthService) RegisterUser(userInfo models.Users) (models.Users, error) 
 
 	return user, nil
 }
-
-
 
 // Login authentifie un utilisateur et retourne un token JWT et un refreshToken
 func (s *AuthService) Login(email, password string) (string, string, error) {
@@ -103,9 +101,9 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 		return "", "", err
 	}
 	accessToken, err := middlewares.GenerateToken(userID, user.Role)
-    if err != nil {
-        return "", "", err
-    }
+	if err != nil {
+		return "", "", err
+	}
 
 	userID, err = ulid.Parse(user.ID)
 	if err != nil {
@@ -208,33 +206,31 @@ func (s *AuthService) UpdateUser(id, username, email, password, profilePhoto, fa
 }
 
 func (s *AuthService) GetPublicUserInfo(id string) (map[string]interface{}, error) {
-    var user models.Users
-    if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
-        return nil, err
-    }
+	var user models.Users
+	if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
+		return nil, err
+	}
 
-    publicInfo := map[string]interface{}{
-        "username":       user.Username,
-        "matchesPlayed":  user.MatchesPlayed,
-        "matchesWon":     user.MatchesWon,
-        "goalsScored":    user.GoalsScored,
-        "behaviorScore":  user.BehaviorScore,
-		"profilePhoto":   user.ProfilePhoto,
-		"favoriteSport":  user.FavoriteSport,
-		"location":       user.Location,
-		"bio":            user.Bio,
-		"skillLevel":     user.SkillLevel,
-		"sho":            user.Sho,
-		"pas":            user.Pas,
-		"dri":            user.Dri,
-		"def":            user.Def,
-		"phy":            user.Phy,
+	publicInfo := map[string]interface{}{
+		"username":      user.Username,
+		"matchesPlayed": user.MatchesPlayed,
+		"matchesWon":    user.MatchesWon,
+		"goalsScored":   user.GoalsScored,
+		"behaviorScore": user.BehaviorScore,
+		"profilePhoto":  user.ProfilePhoto,
+		"favoriteSport": user.FavoriteSport,
+		"location":      user.Location,
+		"bio":           user.Bio,
+		"skillLevel":    user.SkillLevel,
+		"sho":           user.Sho,
+		"pas":           user.Pas,
+		"dri":           user.Dri,
+		"def":           user.Def,
+		"phy":           user.Phy,
+	}
 
-    }
-
-    return publicInfo, nil
+	return publicInfo, nil
 }
-
 
 // Refresh génère un nouveau accessToken à partir d'un refreshToken valide
 func (s *AuthService) Refresh(refreshToken string) (string, error) {
@@ -279,4 +275,18 @@ func (s *AuthService) IsOrganizer(matchID, userID string) bool {
 		return false
 	}
 	return true
+}
+
+// delete my account
+func (s *AuthService) DeleteUser(id string) error {
+	var user models.Users
+	if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
+		return err
+	}
+
+	if err := s.DB.Delete(&user).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
