@@ -34,19 +34,13 @@ func NewAuthController(authService *services.AuthService, imageService *services
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param user body models.Users true "Informations de l'utilisateur"
+// @Param user body RegisterRequest true "Informations de l'utilisateur"
 // @Success 200 {object} models.Users
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /api/register [post]
 func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
-	var req struct {
-		Username string `json:"username" binding:"required"`
-		Email    string `json:"email" binding:"required"`
-		Password string `json:"password" binding:"required"`
-		Location string `json:"location"`
-		Role     string `json:"role"`
-	}
+	var req RegisterRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(map[string]interface{}{"error": err.Error()})
@@ -60,7 +54,7 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 	userInfo := models.Users{
 		Username:     req.Username,
 		Email:        req.Email,
-		PasswordHash: req.Password,
+		PasswordHash: req.Password, // This will be hashed by the AuthService
 		Location:     req.Location,
 		Role:         role,
 	}
@@ -72,6 +66,15 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(user)
+}
+
+// RegisterRequest représente le corps de la requête d'inscription
+type RegisterRequest struct {
+	Username string `json:"username" binding:"required"`
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Location string `json:"location"`
+	Role     string `json:"role"`
 }
 
 // UserHandler gère la requête pour récupérer les informations de l'utilisateur connecté
@@ -286,8 +289,8 @@ func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
 }
 
 type LoginRequest struct {
-    Email    string `json:"email" binding:"required"`
-    Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 // LoginHandler gère la requête de connexion d'un utilisateur
