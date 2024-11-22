@@ -290,3 +290,12 @@ func (s *AuthService) DeleteUser(id string) error {
 
 	return nil
 }
+
+// get all users
+func (s *AuthService) GetAllUsers() ([]models.Users, error) {
+	var users []models.Users
+	if err := s.DB.Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}

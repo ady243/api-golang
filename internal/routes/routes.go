@@ -19,6 +19,7 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Post("/login", controller.LoginHandler)
 	api.Post("/refresh", controller.RefreshHandler)
 	api.Get("/auth/google", controller.GoogleLogin)
+	api.Get("/users", controller.GetUsersHandler)
 	api.Get("/auth/google/callback", controller.GoogleCallback)
 	api.Get("/confirm_email", controller.ConfirmEmailHandler)
 

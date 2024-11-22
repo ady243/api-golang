@@ -605,6 +605,26 @@ paths:
       summary: Mettre à jour les informations de l'utilisateur connecté
       tags:
       - Auth
+  /api/users:
+    get:
+      description: Récupérer tous les utilisateurs
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Users'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Récupérer tous les utilisateurs
+      tags:
+      - Auth
   /api/users/{id}/public:
     get:
       description: Récupérer les informations de l'utilisateur public

@@ -422,3 +422,20 @@ func (ctrl *AuthController) DeleteUserHandler(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Utilisateur supprimé avec succès"})
 }
+
+// GetUsersHandler gère la demande de récupération de tous les utilisateurs
+// @Summary Récupérer tous les utilisateurs
+// @Description Récupérer tous les utilisateurs
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} []models.Users
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/users [get]
+func (ctrl *AuthController) GetUsersHandler(c *fiber.Ctx) error {
+	users, err := ctrl.AuthService.GetAllUsers()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(users)
+}
