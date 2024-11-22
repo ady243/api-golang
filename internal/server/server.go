@@ -67,10 +67,17 @@ func Run() {
 		AllowOrigins: "*",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 	}))
-	app.Use(limiter.New(limiter.Config{
-		Max:        10,
-		Expiration: 30 * 1000,
-	}))
+
+	// Apply rate limiter middleware to all routes except Swagger
+	app.Use(func(c *fiber.Ctx) error {
+		if c.Path() == "/swagger/*" {
+			return c.Next()
+		}
+		return limiter.New(limiter.Config{
+			Max:        10,
+			Expiration: 30 * 1000,
+		})(c)
+	})
 
 	// Define routes
 	app.Get("/", func(c *fiber.Ctx) error {
