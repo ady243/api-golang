@@ -30,14 +30,6 @@ func NewAuthController(authService *services.AuthService, imageService *services
 
 
 // RegisterHandler gère la requête d'inscription d'un utilisateur
-// Les champs suivants sont obligatoires : username, email, password
-// Les champs suivants sont facultatifs : profilePhoto, favoriteSport, bio, location, birthDate, role, skillLevel, pac, sho, pas, dri, def, phy, matchesPlayed, matchesWon, goalsScored, behaviorScore
-// Si le champ role n'est pas fourni, le rôle "Player" est utilisé
-// Si le champ birthDate est fourni, il doit être au format YYYY-MM-DD
-// Si l'inscription est réussie, renvoie le modèle de l'utilisateur en JSON avec un code 200
-// Si une erreur se produit, renvoie une erreur avec un code approprié
-
-// RegisterHandler gère la requête d'inscription d'un utilisateur
 // @Summary Inscription d'un utilisateur
 // @Description Inscription d'un nouvel utilisateur
 // @Tags Auth
@@ -58,7 +50,7 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
     }
 
     if err := c.BodyParser(&req); err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+        return c.Status(fiber.StatusBadRequest).JSON(map[string]interface{}{"error": err.Error()})
     }
 
     if req.Role == "" {
@@ -74,20 +66,15 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
         Role:        role,
     }
 
-    // Utilisation de RegisterUser à la place de Register
     user, err := ctrl.AuthService.RegisterUser(userInfo)
 
     if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+        return c.Status(fiber.StatusInternalServerError).JSON(map[string]interface{}{"error": err.Error()})
     }
 
     return c.Status(fiber.StatusOK).JSON(user)
 }
 
-
-// UserHandler gère la requête pour récupérer les informations de l'utilisateur connecté
-// En cas d'erreur, renvoie une erreur 500 avec le message d'erreur
-// En cas de succès, renvoie le modèle de l'utilisateur en JSON avec un code 200
 
 // UserHandler gère la requête pour récupérer les informations de l'utilisateur connecté
 // @Summary Récupérer les informations de l'utilisateur connecté
@@ -113,9 +100,6 @@ func (ctrl *AuthController) UserHandler(c *fiber.Ctx) error {
     return c.Status(fiber.StatusOK).JSON(user)
 }
 
-
-    // UserUpdate gère la requête pour mettre à jour les informations de l'utilisateur connecté
-    // les champs qui ne sont pas fournis ne sont pas mis à jour
 
 // UserUpdate gère la requête pour mettre à jour les informations de l'utilisateur connecté
 // @Summary Mettre à jour les informations de l'utilisateur connecté
@@ -206,10 +190,6 @@ func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
 
 
 // GetPublicUserInfoHandler gère la requête pour récupérer les informations de l'utilisateur public
-// il prend comme paramètre l'ID de l'utilisateur et renvoie un objet JSON avec les informations
-// de l'utilisateur s'il existe, sinon renvoie un erreur 404
-
-// GetPublicUserInfoHandler gère la requête pour récupérer les informations de l'utilisateur public
 // @Summary Récupérer les informations de l'utilisateur public
 // @Description Récupérer les informations de l'utilisateur public
 // @Tags Auth
@@ -230,8 +210,6 @@ func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
 }
 
 // GoogleLogin redirige l'utilisateur vers la page de connexion Google
-
-// GoogleLogin redirige l'utilisateur vers la page de connexion Google
 // @Summary Rediriger l'utilisateur vers la page de connexion Google
 // @Description Rediriger l'utilisateur vers la page de connexion Google
 // @Tags Auth
@@ -242,8 +220,6 @@ func (ctrl *AuthController) GoogleLogin(c *fiber.Ctx) error {
     url := ctrl.AuthService.GoogleOauthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
     return c.Redirect(url)
 }
-
-// GoogleCallback gère le callback de Google après l'authentification
 
 // GoogleCallback gère le callback de Google après l'authentification
 // @Summary Gérer le callback de Google après l'authentification
@@ -314,7 +290,6 @@ func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
 }
 
 // LoginHandler gère la requête de connexion d'un utilisateur
-
 // @Summary Connexion d'un utilisateur
 // @Description Connexion d'un utilisateur
 // @Tags Auth
@@ -349,8 +324,6 @@ func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
 
     return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": accessToken, "refreshToken": refreshToken})
 }
-
-// RefreshHandler gère la demande de rafraîchissement du token d'un utilisateur
 
 // RefreshHandler gère la demande de rafraîchissement du token d'un utilisateur
 // @Summary Rafraîchir le token d'un utilisateur

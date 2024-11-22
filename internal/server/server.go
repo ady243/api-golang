@@ -1,22 +1,22 @@
 package server
 
 import (
-	"log"
-	"os"
+    "log"
+    "os"
 
-	_ "github.com/ady243/teamup/docs"
-	"github.com/ady243/teamup/internal/controllers"
-	"github.com/ady243/teamup/internal/models"
-	"github.com/ady243/teamup/internal/routes"
-	"github.com/ady243/teamup/internal/services"
-	"github.com/ady243/teamup/storage"
-	"github.com/go-redis/redis/v8"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/helmet"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"github.com/joho/godotenv"
-	fiberSwagger "github.com/swaggo/fiber-swagger"
+    _ "github.com/ady243/teamup/docs" 
+    "github.com/ady243/teamup/internal/controllers"
+    "github.com/ady243/teamup/internal/models"
+    "github.com/ady243/teamup/internal/routes"
+    "github.com/ady243/teamup/internal/services"
+    "github.com/ady243/teamup/storage"
+    "github.com/go-redis/redis/v8"
+    "github.com/gofiber/fiber/v2"
+    "github.com/gofiber/fiber/v2/middleware/cors"
+    "github.com/gofiber/fiber/v2/middleware/helmet"
+    "github.com/gofiber/fiber/v2/middleware/limiter"
+    "github.com/joho/godotenv"
+    fiberSwagger "github.com/swaggo/fiber-swagger"
 )
 
 func Run() {
