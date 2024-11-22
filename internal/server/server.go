@@ -82,6 +82,7 @@ func Run() {
 	routes.SetupChatRoutes(app, chatController)
 	routes.SetupOpenAiRoutes(app, openAiController)
 
+	// Swagger route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	// Start server
