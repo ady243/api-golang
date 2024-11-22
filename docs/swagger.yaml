@@ -1,4 +1,14 @@
 definitions:
+  controllers.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  controllers.SuccessResponse:
+    properties:
+      status:
+        type: string
+    type: object
   models.Role:
     enum:
     - player
@@ -69,7 +79,7 @@ definitions:
 info:
   contact: {}
 paths:
-  /auth/google:
+  /api/auth/google:
     get:
       description: Rediriger l'utilisateur vers la page de connexion Google
       produces:
@@ -82,7 +92,7 @@ paths:
       summary: Rediriger l'utilisateur vers la page de connexion Google
       tags:
       - Auth
-  /auth/google/callback:
+  /api/auth/google/callback:
     get:
       consumes:
       - application/json
@@ -120,7 +130,77 @@ paths:
       summary: Gérer le callback de Google après l'authentification
       tags:
       - Auth
-  /login:
+  /api/chat/{matchID}:
+    get:
+      consumes:
+      - application/json
+      description: Get messages from a chat
+      parameters:
+      - description: Match ID
+        in: path
+        name: matchID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: GetMessages
+      tags:
+      - Chat
+  /api/chat/send:
+    post:
+      consumes:
+      - application/json
+      description: Send a message to a chat
+      parameters:
+      - description: Match ID
+        in: body
+        name: match_id
+        required: true
+        schema:
+          type: string
+      - description: User ID
+        in: body
+        name: user_id
+        required: true
+        schema:
+          type: string
+      - description: Message
+        in: body
+        name: message
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: SendMessage
+      tags:
+      - Chat
+  /api/login:
     post:
       consumes:
       - application/json
@@ -164,7 +244,110 @@ paths:
       summary: Connexion d'un utilisateur
       tags:
       - Auth
-  /refresh:
+  /api/matchesPlayers:
+    post:
+      consumes:
+      - application/json
+      description: Add a player to a match
+      parameters:
+      - description: Match ID
+        in: body
+        name: match_id
+        required: true
+        schema:
+          type: string
+      - description: Player ID
+        in: body
+        name: player_id
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: CreateMatchPlayerHandler
+      tags:
+      - MatchPlayers
+  /api/matchesPlayers/{match_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get all players in a match
+      parameters:
+      - description: Match ID
+        in: path
+        name: match_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: GetMatchPlayersByMatchIDHandler
+      tags:
+      - MatchPlayers
+  /api/openai/formation/{match_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a suggested formation from the AI
+      parameters:
+      - description: Match ID
+        in: path
+        name: match_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: GetFormationFromAi
+      tags:
+      - OpenAI
+  /api/refresh:
     post:
       consumes:
       - application/json
@@ -202,7 +385,7 @@ paths:
       summary: Rafraîchir le token d'un utilisateur
       tags:
       - Auth
-  /register:
+  /api/register:
     post:
       consumes:
       - application/json
@@ -234,7 +417,7 @@ paths:
       summary: Inscription d'un utilisateur
       tags:
       - Auth
-  /userInfo:
+  /api/userInfo:
     get:
       description: Récupérer les informations de l'utilisateur connecté
       produces:
@@ -259,7 +442,7 @@ paths:
       summary: Récupérer les informations de l'utilisateur connecté
       tags:
       - Auth
-  /userUpdate:
+  /api/userUpdate:
     put:
       consumes:
       - application/json
@@ -362,7 +545,7 @@ paths:
       summary: Mettre à jour les informations de l'utilisateur connecté
       tags:
       - Auth
-  /users/{id}/public:
+  /api/users/{id}/public:
     get:
       description: Récupérer les informations de l'utilisateur public
       parameters:

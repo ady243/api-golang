@@ -47,8 +47,8 @@ type PlayerResponse struct {
 // @Accept json
 // @Produce json
 // @Param match_id path string true "Match ID"
-// @Success 200 {object} fiber.Map
-// @Failure 404 {object} fiber.Map
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
 // @Router /api/matchesPlayers/{match_id} [get]
 func NewMatchPlayersController(matchPlayersService *services.MatchPlayersService, authService *services.AuthService, db *gorm.DB) *MatchPlayersController {
 	return &MatchPlayersController{
@@ -65,10 +65,10 @@ func NewMatchPlayersController(matchPlayersService *services.MatchPlayersService
 // @Produce json
 // @Param match_id body string true "Match ID"
 // @Param player_id body string true "Player ID"
-// @Success 201 {object} fiber.Map
-// @Failure 400 {object} fiber.Map
-// @Failure 404 {object} fiber.Map
-// @Failure 500 {object} fiber.Map
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
 // @Router /api/matchesPlayers [post]
 func (ctrl *MatchPlayersController) GetMatchPlayersByMatchIDHandler(c *fiber.Ctx) error {
 	matchID := c.Params("match_id")
@@ -76,7 +76,7 @@ func (ctrl *MatchPlayersController) GetMatchPlayersByMatchIDHandler(c *fiber.Ctx
 	// Retrieve match players
 	matchPlayers, err := ctrl.MatchPlayersService.GetMatchPlayersByMatchID(matchID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match players not found for match ID: " + matchID})
+		return c.Status(fiber.StatusNotFound).JSON(map[string]interface{}{"error": "Match players not found for match ID: " + matchID})
 	}
 
 	// Build player statistics response
@@ -105,7 +105,7 @@ func (ctrl *MatchPlayersController) GetMatchPlayersByMatchIDHandler(c *fiber.Ctx
 	}
 
 	// Return response with player statistics
-	return c.JSON(fiber.Map{
+	return c.JSON(map[string]interface{}{
 		"players": playerStats,
 	})
 }
@@ -119,29 +119,29 @@ func (ctrl *MatchPlayersController) CreateMatchPlayerHandler(c *fiber.Ctx) error
 
 	// Parse the request JSON
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request format"})
+		return c.Status(fiber.StatusBadRequest).JSON(map[string]interface{}{"error": "Invalid request format"})
 	}
 
 	matchID, err := ulid.Parse(req.MatchID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+		return c.Status(fiber.StatusBadRequest).JSON(map[string]interface{}{"error": "Invalid match ID"})
 	}
 
 	// Validate player ID
 	playerID, err := ulid.Parse(req.PlayerID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid player ID format"})
+		return c.Status(fiber.StatusBadRequest).JSON(map[string]interface{}{"error": "Invalid player ID format"})
 	}
 
 	// Verify if player exists
 	player, err := ctrl.AuthService.GetUserByID(playerID.String())
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Player not found"})
+		return c.Status(fiber.StatusBadRequest).JSON(map[string]interface{}{"error": "Player not found"})
 	}
 
 	// Verify if match exists
 	if err := ctrl.MatchPlayersService.CheckMatchExists(matchID.String()); err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
+		return c.Status(fiber.StatusNotFound).JSON(map[string]interface{}{"error": "Match not found"})
 	}
 
 	// Generate a new ID for the match player
@@ -158,11 +158,11 @@ func (ctrl *MatchPlayersController) CreateMatchPlayerHandler(c *fiber.Ctx) error
 
 	// Add the player to the match
 	if err := ctrl.MatchPlayersService.CreateMatchPlayers(matchPlayer); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not add player to match: " + err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(map[string]interface{}{"error": "Could not add player to match: " + err.Error()})
 	}
 
 	// Prepare the response for the added match player
-	matchPlayerResponse := fiber.Map{
+	matchPlayerResponse := map[string]interface{}{
 		"match_player": matchPlayer,
 		"player": PlayerResponse{
 			ID:            player.ID,
@@ -196,28 +196,28 @@ func (ctrl *MatchPlayersController) AssignTeamToPlayerHandler(c *fiber.Ctx) erro
 	}
 
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(map[string]interface{}{"error": err.Error()})
 	}
 
 	if req.TeamNumber != 1 && req.TeamNumber != 2 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid team number"})
+		return c.Status(fiber.StatusBadRequest).JSON(map[string]interface{}{"error": "Invalid team number"})
 	}
 
 	matchPlayer, err := ctrl.MatchPlayersService.GetMatchPlayerByID(req.MatchPlayerID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match player not found"})
+		return c.Status(fiber.StatusNotFound).JSON(map[string]interface{}{"error": "Match player not found"})
 	}
 
 	// Vérification si l'utilisateur est l'organisateur du match
 	if !ctrl.AuthService.IsOrganizer(matchPlayer.MatchID, c.Locals("user_id").(string)) {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Unauthorized"})
+		return c.Status(fiber.StatusForbidden).JSON(map[string]interface{}{"error": "Unauthorized"})
 	}
 
 	// Attribuer l'équipe
 	matchPlayer.TeamNumber = &req.TeamNumber
 
 	if err := ctrl.MatchPlayersService.UpdateMatchPlayer(matchPlayer); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(map[string]interface{}{"error": err.Error()})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(matchPlayer)
@@ -229,7 +229,7 @@ func (ctrl *MatchPlayersController) DeleteMatchPlayerHandler(c *fiber.Ctx) error
 	// Récupérer les informations sur le joueur du match
 	matchPlayer, err := ctrl.MatchPlayersService.GetMatchPlayerByID(matchPlayerID)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match player not found"})
+		return c.Status(fiber.StatusNotFound).JSON(map[string]interface{}{"error": "Match player not found"})
 	}
 
 	// Récupérer l'utilisateur connecté
@@ -237,7 +237,7 @@ func (ctrl *MatchPlayersController) DeleteMatchPlayerHandler(c *fiber.Ctx) error
 
 	// Vérifier si l'utilisateur est soit l'organisateur, soit le joueur lui-même
 	if userID != matchPlayer.PlayerID && !ctrl.AuthService.IsOrganizer(matchPlayer.MatchID, userID) {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Unauthorized"})
+		return c.Status(fiber.StatusForbidden).JSON(map[string]interface{}{"error": "Unauthorized"})
 	}
 
 	// Mettre à jour le champ DeletedAt avec l'heure actuelle
@@ -245,8 +245,8 @@ func (ctrl *MatchPlayersController) DeleteMatchPlayerHandler(c *fiber.Ctx) error
 	matchPlayer.DeletedAt = &now
 
 	if err := ctrl.MatchPlayersService.UpdateMatchPlayer(matchPlayer); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(map[string]interface{}{"error": err.Error()})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Player marked as removed from match"})
+	return c.Status(fiber.StatusOK).JSON(map[string]interface{}{"message": "Player marked as removed from match"})
 }

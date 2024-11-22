@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/google": {
+        "/api/auth/google": {
             "get": {
                 "description": "Rediriger l'utilisateur vers la page de connexion Google",
                 "produces": [
@@ -35,7 +35,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/google/callback": {
+        "/api/auth/google/callback": {
             "get": {
                 "description": "Gérer le callback de Google après l'authentification",
                 "consumes": [
@@ -91,7 +91,113 @@ const docTemplate = `{
                 }
             }
         },
-        "/login": {
+        "/api/chat/send": {
+            "post": {
+                "description": "Send a message to a chat",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "SendMessage",
+                "parameters": [
+                    {
+                        "description": "Match ID",
+                        "name": "match_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Message",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/chat/{matchID}": {
+            "get": {
+                "description": "Get messages from a chat",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "GetMessages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Match ID",
+                        "name": "matchID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/login": {
             "post": {
                 "description": "Connexion d'un utilisateur",
                 "consumes": [
@@ -156,7 +262,159 @@ const docTemplate = `{
                 }
             }
         },
-        "/refresh": {
+        "/api/matchesPlayers": {
+            "post": {
+                "description": "Add a player to a match",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MatchPlayers"
+                ],
+                "summary": "CreateMatchPlayerHandler",
+                "parameters": [
+                    {
+                        "description": "Match ID",
+                        "name": "match_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Player ID",
+                        "name": "player_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/matchesPlayers/{match_id}": {
+            "get": {
+                "description": "Get all players in a match",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MatchPlayers"
+                ],
+                "summary": "GetMatchPlayersByMatchIDHandler",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Match ID",
+                        "name": "match_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/openai/formation/{match_id}": {
+            "get": {
+                "description": "Get a suggested formation from the AI",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OpenAI"
+                ],
+                "summary": "GetFormationFromAi",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Match ID",
+                        "name": "match_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/refresh": {
             "post": {
                 "description": "Rafraîchir le token d'un utilisateur",
                 "consumes": [
@@ -212,7 +470,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/register": {
+        "/api/register": {
             "post": {
                 "description": "Inscription d'un nouvel utilisateur",
                 "consumes": [
@@ -260,7 +518,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/userInfo": {
+        "/api/userInfo": {
             "get": {
                 "security": [
                     {
@@ -299,7 +557,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/userUpdate": {
+        "/api/userUpdate": {
             "put": {
                 "security": [
                     {
@@ -463,7 +721,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}/public": {
+        "/api/users/{id}/public": {
             "get": {
                 "security": [
                     {
@@ -506,6 +764,22 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "controllers.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Role": {
             "type": "string",
             "enum": [
