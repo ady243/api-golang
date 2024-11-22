@@ -78,7 +78,7 @@ func (s *AuthService) RegisterUser(userInfo models.Users) (models.Users, error) 
 	}
 
 	// Envoyer un email de confirmation avec le jeton
-	if err := s.EmailService.SendConfirmationEmail(user.Email); err != nil {
+	if err := s.EmailService.SendConfirmationEmail(user.Email, user.ConfirmationToken); err != nil {
 		return models.Users{}, err
 	}
 
@@ -291,7 +291,7 @@ func (s *AuthService) DeleteUser(id string) error {
 	return nil
 }
 
-// get all users
+//get all users
 func (s *AuthService) GetAllUsers() ([]models.Users, error) {
 	var users []models.Users
 	if err := s.DB.Find(&users).Error; err != nil {

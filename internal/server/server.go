@@ -3,6 +3,7 @@ package server
 import (
 	"log"
 	"os"
+	"time"
 
 	_ "github.com/ady243/teamup/docs"
 	"github.com/ady243/teamup/internal/controllers"
@@ -36,12 +37,6 @@ func Run() {
 		log.Printf("Error migrating database: %v", err)
 	}
 
-	// Optional: Create fake users for testing
-	// users := models.GenerateFakeUsers(10)
-	// for _, user := range users {
-	//     db.Create(&user)
-	// }
-
 	// Connect to Redis
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: os.Getenv("REDIS_ADDR"),
@@ -49,7 +44,8 @@ func Run() {
 
 	// Initialize services and controllers
 	imageService := services.NewImageService("./uploads")
-	authService := services.NewAuthService(db, imageService, services.NewEmailService())
+	emailService := services.NewEmailService()
+	authService := services.NewAuthService(db, imageService, emailService)
 	authController := controllers.NewAuthController(authService, imageService)
 	matchService := services.NewMatchService(db)
 	openAIService := services.NewOpenAIService()
@@ -75,7 +71,7 @@ func Run() {
 		}
 		return limiter.New(limiter.Config{
 			Max:        10,
-			Expiration: 30 * 1000,
+			Expiration: 30 * time.Second,
 		})(c)
 	})
 

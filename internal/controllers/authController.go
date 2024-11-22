@@ -44,7 +44,7 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 	var req RegisterRequest
 
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(map[string]interface{}{"error": err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	if req.Role == "" {
@@ -62,21 +62,17 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 	}
 
 	user, err := ctrl.AuthService.RegisterUser(userInfo)
-
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(map[string]interface{}{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Créer une réponse personnalisée
-	userResponse := UserResponse{
-		Username:          user.Username,
-		Email:             user.Email,
-		Location:          user.Location,
-		Role:              string(user.Role),
-		ConfirmationToken: user.ConfirmationToken,
+	// Envoyer un email de confirmation
+	err = ctrl.AuthService.EmailService.SendConfirmationEmail(user.Email, user.ConfirmationToken)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to send confirmation email"})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(userResponse)
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Inscription réussie, veuillez vérifier votre email pour confirmer votre compte"})
 }
 
 // RegisterRequest représente le corps de la requête d'inscription
