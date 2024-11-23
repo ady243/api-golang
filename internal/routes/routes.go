@@ -22,13 +22,12 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Get("/users", controller.GetUsersHandler)
 	api.Get("/auth/google/callback", controller.GoogleCallback)
 	api.Get("/confirm_email", controller.ConfirmEmailHandler)
-
+	api.Put("/userUpdate", middlewares.JWTMiddleware, controller.UserUpdate)
 	// Routes that require authenticationdeja
 
 	api.Use(middlewares.JWTMiddleware)
 	api.Get("/userInfo", controller.UserHandler)
 	api.Delete("/deleteMyAccount", controller.DeleteUserHandler)
-	api.Put("/userUpdate", controller.UserUpdate)
 	api.Get("/users/:id/public", controller.GetPublicUserInfoHandler)
 }
 
