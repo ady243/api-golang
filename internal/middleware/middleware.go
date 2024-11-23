@@ -5,7 +5,6 @@ import (
     "os"
     "strings"
     "time"
-
     "github.com/ady243/teamup/helpers"
     "github.com/ady243/teamup/internal/models"
     "github.com/dgrijalva/jwt-go"

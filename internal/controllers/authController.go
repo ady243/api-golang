@@ -144,7 +144,7 @@ func (ctrl *AuthController) UserHandler(c *fiber.Ctx) error {
 // @Failure 500 {object} map[string]interface{}
 // @Router /api/userUpdate [put]
 func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
-	userID := c.Locals("userID")
+	userID := c.Locals("user_id")
 	if userID == nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
