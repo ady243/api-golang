@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/ady243/teamup/internal/models"
@@ -406,7 +405,7 @@ func (ctrl *MatchController) ChatWebSocketHandler(c *websocket.Conn) {
 
 func (ctrl *MatchController) AddPlayerToMatchHandler(c *fiber.Ctx) error {
 	matchID := c.Params("id")
-	userID := c.Locals("user_id").(string) // Assurez-vous que l'ID utilisateur est disponible dans le contexte
+	userID := c.Locals("user_id").(string)
 
 	// Vérifier si l'utilisateur est déjà dans le match
 	if err := ctrl.MatchService.IsUserInMatch(matchID, userID); err == nil {
@@ -426,19 +425,20 @@ func (ctrl *MatchController) AddPlayerToMatchHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "Joined match and chat"})
 }
 
-// Handler pour obtenir les matchs proches
+// Handler pour obtenir les matchs proches basés sur l'utilisateur connecté
 func (ctrl *MatchController) GetNearbyMatchesHandler(c *fiber.Ctx) error {
-	lat, err := strconv.ParseFloat(c.Query("lat"), 64)
+	userID := c.Locals("user_id").(string)
+
+	user, err := ctrl.AuthService.GetUserByID(userID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid latitude"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not retrieve user"})
 	}
 
-	lon, err := strconv.ParseFloat(c.Query("lon"), 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid longitude"})
+	if user.Latitude == 0 || user.Longitude == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "User location not set"})
 	}
 
-	matches, err := ctrl.MatchService.FindNearbyMatches(lat, lon, 6.0) // La distance de recherche est de 6 km
+	matches, err := ctrl.MatchService.FindNearbyMatches(user.Latitude, user.Longitude, 6.0)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}

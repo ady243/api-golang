@@ -43,8 +43,8 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 // - WS /api/matches/:id/chat: Establishes a WebSocket connection for a match chat.
 func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController) {
 	api := app.Group("/api/matches")
-	api.Get("/nearby", controller.GetNearbyMatchesHandler)
 	api.Use(middlewares.JWTMiddleware)
+	api.Get("/nearby", controller.GetNearbyMatchesHandler)
 	api.Get("/", controller.GetAllMatchesHandler)
 	api.Post("/", controller.CreateMatchHandler)
 	api.Get("/:id", controller.GetMatchByIDHandler)
@@ -57,11 +57,11 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
 
 // SetupRoutesMatchePlayers sets up the routes for managing match players.
 // It will create an "api/matchesPlayers" group and add the following routes:
-// - GET /api/matchesPlayers/:match_id: Retrieves all match players associated
-//   with a given match ID.
-// - POST /api/matchesPlayers/: Creates a new match player.
-// - PUT /api/matchesPlayers/assignTeam: Assigns a team to a match player.
-// - DELETE /api/matchesPlayers/:match_player_id: Deletes a match player.
+//   - GET /api/matchesPlayers/:match_id: Retrieves all match players associated
+//     with a given match ID.
+//   - POST /api/matchesPlayers/: Creates a new match player.
+//   - PUT /api/matchesPlayers/assignTeam: Assigns a team to a match player.
+//   - DELETE /api/matchesPlayers/:match_player_id: Deletes a match player.
 func SetupRoutesMatchePlayers(app *fiber.App, controller *controllers.MatchPlayersController) {
 	api := app.Group("/api/matchesPlayers")
 	api.Get("/:match_id", controller.GetMatchPlayersByMatchIDHandler)
@@ -81,11 +81,10 @@ func SetupChatRoutes(app *fiber.App, controller *controllers.ChatController) {
 	api.Get("/chat/:matchID", controller.GetMessages)
 }
 
-
 // SetupOpenAiRoutes sets up the routes for using OpenAI services.
 // It will create an "api" group and add the following routes:
-// - GET /api/openai/formation/:match_id: Retrieves a suggested formation
-//   for a given match ID, based on the statistics of the players in the match.
+//   - GET /api/openai/formation/:match_id: Retrieves a suggested formation
+//     for a given match ID, based on the statistics of the players in the match.
 func SetupOpenAiRoutes(app *fiber.App, controller *controllers.OpenAiController) {
 	api := app.Group("/api")
 	api.Use(middlewares.JWTMiddleware)
