@@ -58,8 +58,24 @@ func (s *MatchService) UpdateMatch(match *models.Matches) error {
 	return nil
 }
 
-// DeleteMatch supprime un match par son ID (soft delete)
-func (s *MatchService) DeleteMatch(matchID string) error {
+// DeleteMatch supprime un match, si l'utilisateur est l'organisateur.
+// L'ID du match et l'ID de l'utilisateur sont fournis en paramètres.
+// La méthode renvoie une erreur si l'utilisateur n'est pas l'organisateur
+// ou si le match n'est pas trouvé.
+func (s *MatchService) DeleteMatch(matchID, userID string) error {
+	var match models.Matches
+	if err := s.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("match not found")
+		}
+		return err
+	}
+
+	// Vérifiez si l'utilisateur est l'organisateur du match
+	if match.OrganizerID != userID {
+		return errors.New("only the organizer can delete the match")
+	}
+
 	if err := s.DB.Model(&models.Matches{}).Where("id = ?", matchID).Update("deleted_at", time.Now()).Error; err != nil {
 		return err
 	}
@@ -70,7 +86,7 @@ func (s *MatchService) DeleteMatch(matchID string) error {
 func calculateDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	const earthRadius = 6371 // Rayon de la Terre en kilomètres
 	dLat := (lat2 - lat1) * math.Pi / 180.0
-	dLon := (lon2 - lon1) * math.Pi / 180.0
+	dLon := (lon1 - lon2) * math.Pi / 180.0
 	a := math.Sin(dLat/2)*math.Sin(dLat/2) + math.Cos(lat1*math.Pi/180.0)*math.Cos(lat2*math.Pi/180.0)*math.Sin(dLon/2)*math.Sin(dLon/2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	return earthRadius * c
@@ -119,4 +135,13 @@ func (s *MatchService) IsUserInMatch(matchID, userID string) error {
 		return errors.New("user is not in the match")
 	}
 	return nil
+}
+
+// GetMatchByOrganizerID récupère les matchs par l'ID de l'organisateur
+func (s *MatchService) GetMatchByOrganizerID(organizerID string) ([]models.Matches, error) {
+    var matches []models.Matches
+    if err := s.DB.Where("organizer_id = ?", organizerID).Find(&matches).Error; err != nil {
+        return nil, err
+    }
+    return matches, nil
 }

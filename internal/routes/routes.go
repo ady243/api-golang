@@ -23,7 +23,7 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Get("/auth/google/callback", controller.GoogleCallback)
 	api.Get("/confirm_email", controller.ConfirmEmailHandler)
 	api.Put("/userUpdate", middlewares.JWTMiddleware, controller.UserUpdate)
-	// Routes that require authenticationdeja
+	// Routes that require authentication
 
 	api.Use(middlewares.JWTMiddleware)
 	api.Get("/userInfo", controller.UserHandler)
@@ -50,6 +50,7 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
 	api.Delete("/:id", controller.DeleteMatchHandler)
 	api.Post("/:id/join", controller.AddPlayerToMatchHandler)
 	api.Get("/:id/chat", websocket.New(controller.ChatWebSocketHandler))
+	api.Get("/organizer/matches", controller.GetMatchByOrganizerIDHandler)
 }
 
 // SetupRoutesMatchePlayers sets up the routes for managing match players.
@@ -86,8 +87,6 @@ func SetupChatRoutes(app *fiber.App, controller *controllers.ChatController) {
 // @Tags OpenAI
 func SetupOpenAiRoutes(app *fiber.App, controller *controllers.OpenAiController) {
 	api := app.Group("/api")
-
-	// Routes that require authentication
 	api.Use(middlewares.JWTMiddleware)
 	api.Get("/openai/formation/:match_id", controller.GetFormationFromAi)
 }
