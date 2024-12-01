@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
@@ -11,13 +12,14 @@ import (
 
 // MatchService fournit les services pour gérer les matchs
 type MatchService struct {
-	DB *gorm.DB
+	DB          *gorm.DB
+	ChatService *ChatService
 }
 
-// NewMatchService crée une nouvelle instance de MatchService
-func NewMatchService(db *gorm.DB) *MatchService {
+func NewMatchService(db *gorm.DB, chatService *ChatService) *MatchService {
 	return &MatchService{
-		DB: db,
+		DB:          db,
+		ChatService: chatService,
 	}
 }
 
@@ -63,23 +65,34 @@ func (s *MatchService) UpdateMatch(match *models.Matches) error {
 // La méthode renvoie une erreur si l'utilisateur n'est pas l'organisateur
 // ou si le match n'est pas trouvé.
 func (s *MatchService) DeleteMatch(matchID, userID string) error {
-	var match models.Matches
-	if err := s.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("match not found")
-		}
+    // Récupère le match à partir de son ID
+    match, err := s.GetMatchByID(matchID)
+    if err != nil {
+        return err
+    }
+
+    // Vérifie si l'utilisateur connecté est l'organisateur du match
+    if match.OrganizerID != userID {
+        return fmt.Errorf("you are not authorized to delete this match")
+    }
+
+	now := time.Now()
+	match.DeletedAt = &now
+    if err := s.DB.Save(&match).Error; err != nil {
+        return err
+    }
+
+    // Supprime les joueurs du match
+    if err := s.DB.Where("match_id = ?", matchID).Delete(&models.MatchPlayers{}).Error; err != nil {
+        return err
+    }
+
+    // Supprime les messages de chat associés au match
+    if err := s.ChatService.DeleteChatMessages(matchID); err != nil {
 		return err
 	}
 
-	// Vérifiez si l'utilisateur est l'organisateur du match
-	if match.OrganizerID != userID {
-		return errors.New("only the organizer can delete the match")
-	}
-
-	if err := s.DB.Model(&models.Matches{}).Where("id = ?", matchID).Update("deleted_at", time.Now()).Error; err != nil {
-		return err
-	}
-	return nil
+    return nil
 }
 
 // Fonction de Haversine pour calculer la distance en km entre deux points
