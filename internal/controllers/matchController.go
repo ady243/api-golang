@@ -450,10 +450,10 @@ func (ctrl *MatchController) GetNearbyMatchesHandler(c *fiber.Ctx) error {
 // GetMatchByOrganizerIDHandler gets all matches created by the organizer with the given ID.
 // The ID is retrieved from the user_id key in the context.
 func (ctrl *MatchController) GetMatchByOrganizerIDHandler(c *fiber.Ctx) error {
-    organizerID := c.Locals("user_id").(string)
-    matches, err := ctrl.MatchService.GetMatchByOrganizerID(organizerID)
-    if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-    }
-    return c.JSON(matches)
+	organizerID := c.Locals("user_id").(string)
+	matches, err := ctrl.MatchService.GetMatchByOrganizerID(organizerID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(matches)
 }
