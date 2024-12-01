@@ -323,35 +323,35 @@ func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 // A soft delete is performed by setting the DeletedAt field to the current time.
 // The match is removed from the chat and all players are removed from the match as well.
 func (ctrl *MatchController) DeleteMatchHandler(c *fiber.Ctx) error {
-	id := c.Params("id")
-	log.Println("Match ID:", id)
+    id := c.Params("id")
+    log.Println("Match ID:", id)
 
-	// Parse l'ID du match
-	matchID, err := ulid.Parse(id)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
-	}
+    // Parse l'ID du match
+    matchID, err := ulid.Parse(id)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+    }
 
-	// Récupère l'ID de l'utilisateur connecté
-	userID := c.Locals("user_id").(string)
+    // Récupère l'ID de l'utilisateur connecté
+    userID := c.Locals("user_id").(string)
 
-	// Récupère le match à partir de son ID
-	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
-	}
+    // Récupère le match à partir de son ID
+    match, err := ctrl.MatchService.GetMatchByID(matchID.String())
+    if err != nil {
+        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
+    }
 
-	// Vérifie si l'utilisateur connecté est l'organisateur du match
-	if match.OrganizerID != userID {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to delete this match"})
-	}
+    // Vérifie si l'utilisateur connecté est l'organisateur du match
+    if match.OrganizerID != userID {
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to delete this match"})
+    }
 
-	// Effectue la suppression douce via le service
-	if err := ctrl.MatchService.DeleteMatch(matchID.String(), userID); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
+    // Effectue la suppression douce via le service
+    if err := ctrl.MatchService.DeleteMatch(matchID.String(), userID); err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	return c.SendStatus(fiber.StatusNoContent)
+    return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (ctrl *MatchController) ChatWebSocketHandler(c *websocket.Conn) {
