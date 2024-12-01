@@ -65,34 +65,34 @@ func (s *MatchService) UpdateMatch(match *models.Matches) error {
 // La méthode renvoie une erreur si l'utilisateur n'est pas l'organisateur
 // ou si le match n'est pas trouvé.
 func (s *MatchService) DeleteMatch(matchID, userID string) error {
-    // Récupère le match à partir de son ID
-    match, err := s.GetMatchByID(matchID)
-    if err != nil {
-        return err
-    }
-
-    // Vérifie si l'utilisateur connecté est l'organisateur du match
-    if match.OrganizerID != userID {
-        return fmt.Errorf("you are not authorized to delete this match")
-    }
-
-	now := time.Now()
-	match.DeletedAt = &now
-    if err := s.DB.Save(&match).Error; err != nil {
-        return err
-    }
-
-    // Supprime les joueurs du match
-    if err := s.DB.Where("match_id = ?", matchID).Delete(&models.MatchPlayers{}).Error; err != nil {
-        return err
-    }
-
-    // Supprime les messages de chat associés au match
-    if err := s.ChatService.DeleteChatMessages(matchID); err != nil {
+	// Récupère le match à partir de son ID
+	match, err := s.GetMatchByID(matchID)
+	if err != nil {
 		return err
 	}
 
-    return nil
+	// Vérifie si l'utilisateur connecté est l'organisateur du match
+	if match.OrganizerID != userID {
+		return fmt.Errorf("you are not authorized to delete this match")
+	}
+
+	now := time.Now()
+	match.DeletedAt = &now
+	if err := s.DB.Save(&match).Error; err != nil {
+		return err
+	}
+
+	// Supprime les joueurs du match
+	if err := s.DB.Where("match_id = ?", matchID).Delete(&models.MatchPlayers{}).Error; err != nil {
+		return err
+	}
+
+	// Supprime les messages de chat associés au match
+	if err := s.ChatService.DeleteChatMessages(matchID); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Fonction de Haversine pour calculer la distance en km entre deux points
@@ -152,9 +152,9 @@ func (s *MatchService) IsUserInMatch(matchID, userID string) error {
 
 // GetMatchByOrganizerID récupère les matchs par l'ID de l'organisateur
 func (s *MatchService) GetMatchByOrganizerID(organizerID string) ([]models.Matches, error) {
-    var matches []models.Matches
-    if err := s.DB.Where("organizer_id = ?", organizerID).Find(&matches).Error; err != nil {
-        return nil, err
-    }
-    return matches, nil
+	var matches []models.Matches
+	if err := s.DB.Where("organizer_id = ? AND deleted_at IS NULL", organizerID).Find(&matches).Error; err != nil {
+		return nil, err
+	}
+	return matches, nil
 }
