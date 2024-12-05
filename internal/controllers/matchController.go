@@ -408,7 +408,6 @@ func (ctrl *MatchController) ChatWebSocketHandler(c *websocket.Conn) {
 func (ctrl *MatchController) AddPlayerToMatchHandler(c *fiber.Ctx) error {
 	matchID := c.Params("id")
 	userID := c.Locals("user_id").(string)
-	userID := c.Locals("user_id").(string)
 
 	// Vérifier si l'utilisateur est déjà dans le match
 	if err := ctrl.MatchService.IsUserInMatch(matchID, userID); err == nil {
