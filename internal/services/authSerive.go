@@ -299,3 +299,12 @@ func (s *AuthService) GetAllUsers() ([]models.Users, error) {
 	}
 	return users, nil
 }
+
+//public user info by id
+func (s *AuthService) GetPublicUserInfoByID(id string) (models.Users, error) {
+	var user models.Users
+	if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
+		return models.Users{}, err
+	}
+	return user, nil
+}

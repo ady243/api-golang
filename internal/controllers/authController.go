@@ -204,26 +204,6 @@ func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(user)
 }
 
-// GetPublicUserInfoHandler gère la requête pour récupérer les informations de l'utilisateur public
-// @Summary Récupérer les informations de l'utilisateur public
-// @Description Récupérer les informations de l'utilisateur public
-// @Tags Auth
-// @Security BearerAuth
-// @Produce json
-// @Param id path string true "ID de l'utilisateur"
-// @Success 200 {object} models.Users
-// @Failure 404 {object} map[string]interface{}
-// @Router /api/users/{id}/public [get]
-func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
-	userID := c.Params("id")
-	publicInfo, err := ctrl.AuthService.GetPublicUserInfo(userID)
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
-	}
-
-	return c.JSON(publicInfo)
-}
-
 // GoogleLogin redirige l'utilisateur vers la page de connexion Google
 // @Summary Rediriger l'utilisateur vers la page de connexion Google
 // @Description Rediriger l'utilisateur vers la page de connexion Google
@@ -434,4 +414,25 @@ func (ctrl *AuthController) GetUsersHandler(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(users)
+}
+
+//public profile by id
+
+// @Summary GetPublicUserInfoHandler
+// @Description Get public user info by id
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} models.Users
+// @Failure 404 {object} map[string]interface{}
+// @Router /api/users/{id}/public [get]
+func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
+	userID := c.Params("id")
+	publicInfo, err := ctrl.AuthService.GetPublicUserInfoByID(userID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	return c.JSON(publicInfo)
 }

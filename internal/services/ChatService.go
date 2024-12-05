@@ -88,3 +88,16 @@ func (s *ChatService) AddUserToChat(matchID, userID string) error {
 
     return nil
 }
+
+
+//delete chat messages
+func (s *ChatService) DeleteChatMessages(matchID string) error {
+    ctx := context.Background()
+    key := "chat:" + matchID
+
+    if err := s.RedisClient.Del(ctx, key).Err(); err != nil {
+        return err
+    }
+
+    return nil
+}

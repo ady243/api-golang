@@ -47,7 +47,7 @@ func Run() {
 	emailService := services.NewEmailService()
 	authService := services.NewAuthService(db, imageService, emailService)
 	authController := controllers.NewAuthController(authService, imageService)
-	matchService := services.NewMatchService(db)
+	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient))
 	openAIService := services.NewOpenAIService()
 	chatService := services.NewChatService(db, redisClient)
 	matchController := controllers.NewMatchController(matchService, authService, db, chatService)
