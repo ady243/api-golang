@@ -436,3 +436,78 @@ func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
 
 	return c.JSON(publicInfo)
 }
+
+
+// @Summary Attribuer le rôle d'arbitre à un joueur
+// @Description Attribuer le rôle d'arbitre à un joueur
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Param organizerID path string true "Organizer ID"
+// @Param playerID path string true "Player ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+func (ctrl *AuthController) AssignRefereeRole(c *fiber.Ctx) error {
+	organizerID := c.Params("organizerID")
+	playerID := c.Params("playerID")
+
+	err := ctrl.AuthService.AssignRefereeRole(organizerID, playerID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role assigned successfully"})
+}
+
+//CheckAndResetRole gère la vérification et la réinitialisation du rôle de l'utilisateur
+// @Summary Vérifier et réinitialiser le rôle de l'utilisateur
+// @Description Vérifier si le match a expiré et réinitialiser le rôle de l'utilisateur
+// @Tags Auth
+// @Produce json
+// @Param matchID path string true "Match ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+func (ctrl *AuthController) CheckAndResetRole(c *fiber.Ctx) error {
+	matchID := c.Params("matchID")
+
+	err := ctrl.AuthService.CheckAndResetRole(matchID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role reset successfully"})
+}
+
+
+
+// @Summary Mettre à jour les statistiques d'un joueur
+// @Description Mettre à jour les statistiques d'un joueur
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+func (ctrl *AuthController) UpdateUserStatistics(c *fiber.Ctx) error {
+    userID := c.Params("id")
+    var stats struct {
+        MatchesPlayed int `json:"matchesPlayed"`
+        MatchesWon    int `json:"matchesWon"`
+        GoalsScored   int `json:"goalsScored"`
+        BehaviorScore int `json:"behaviorScore"`
+    }
+
+    if err := c.BodyParser(&stats); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    err := ctrl.AuthService.UpdateUserStatistics(userID, stats.MatchesPlayed, stats.MatchesWon, stats.GoalsScored, stats.BehaviorScore)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User statistics updated successfully"})
+}

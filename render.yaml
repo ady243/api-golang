@@ -1,7 +1,7 @@
 services:
   - type: web
+    runtime: go
     name: api-golang
-    env: docker
     buildCommand: "docker build -f Dockerfile.prod -t api-golang ."
     startCommand: "./api"
     envVars:
@@ -30,6 +30,4 @@ services:
       - key: REDIS_PASSWORD
         value: "" 
     plan: free
-    branches:
-      - prod#2
     autoDeploy: true

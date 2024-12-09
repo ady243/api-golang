@@ -29,6 +29,9 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Get("/userInfo", controller.UserHandler)
 	api.Delete("/deleteMyAccount", controller.DeleteUserHandler)
 	api.Get("/users/:id/public", controller.GetPublicUserInfoHandler)
+	api.Post("/assignRole", controller.AssignRefereeRole)
+	api.Post("/CheckAndResetRole", controller.CheckAndResetRole)
+	api.Post("/updateRole", controller.UpdateUserStatistics)
 }
 
 // SetupRoutesMatches sets up the routes for managing matches.

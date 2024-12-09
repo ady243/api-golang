@@ -9,7 +9,7 @@ type Role string
 const (
     Player        Role = "player"
     Referee       Role = "referee"
-    Administrator Role = "administrator"
+    Organizer Role = "organizer"
 )
 type Users struct {
     ID                 string     `json:"id" gorm:"primaryKey;type:varchar(26)"`

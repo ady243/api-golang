@@ -194,7 +194,7 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 	}
 
 	// Enregistre le match dans la base de données
-	if err := ctrl.MatchService.CreateMatch(match); err != nil {
+	if err := ctrl.MatchService.CreateMatch(match, user.ID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 

@@ -291,7 +291,7 @@ func (s *AuthService) DeleteUser(id string) error {
 	return nil
 }
 
-//get all users
+// get all users
 func (s *AuthService) GetAllUsers() ([]models.Users, error) {
 	var users []models.Users
 	if err := s.DB.Find(&users).Error; err != nil {
@@ -300,11 +300,85 @@ func (s *AuthService) GetAllUsers() ([]models.Users, error) {
 	return users, nil
 }
 
-//public user info by id
+// public user info by id
 func (s *AuthService) GetPublicUserInfoByID(id string) (models.Users, error) {
 	var user models.Users
 	if err := s.DB.Where("id = ?", id).First(&user).Error; err != nil {
 		return models.Users{}, err
 	}
 	return user, nil
+}
+
+func (s *AuthService) AssignRefereeRole(organizerID, playerID string) error {
+	var organizer models.Users
+	if err := s.DB.Where("id = ? AND role = ?", organizerID, models.Organizer).First(&organizer).Error; err != nil {
+		return errors.New("only organizers can assign referee role")
+	}
+
+	// Attribuer le rôle de referee au joueur
+	var player models.Users
+	if err := s.DB.Where("id = ?", playerID).First(&player).Error; err != nil {
+		return err
+	}
+	player.Role = models.Referee
+	if err := s.DB.Save(&player).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *AuthService) CheckAndResetRole(matchID string) error {
+	var match models.Matches
+	if err := s.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
+		return err
+	}
+
+	if match.EndTime.Before(time.Now()) {
+		var user models.Users
+		if err := s.DB.Where("id = ?", match.OrganizerID).First(&user).Error; err != nil {
+			return err
+		}
+		user.Role = models.Player
+		if err := s.DB.Save(&user).Error; err != nil {
+			return err
+		}
+
+		if match.RefereeID != nil {
+			var referee models.Users
+			if err := s.DB.Where("id = ?", *match.RefereeID).First(&referee).Error; err != nil {
+				return err
+			}
+			referee.Role = models.Player
+			if err := s.DB.Save(&referee).Error; err != nil {
+				return err
+			}
+		}
+
+		// Mettre à jour le statut du match à "expired"
+		match.Status = models.Expired
+		if err := s.DB.Save(&match).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *AuthService) UpdateUserStatistics(userID string, matchesPlayed, matchesWon, goalsScored, behaviorScore int) error {
+	var user models.Users
+	if err := s.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		return err
+	}
+
+	user.MatchesPlayed = matchesPlayed
+	user.MatchesWon = matchesWon
+	user.GoalsScored = goalsScored
+	user.BehaviorScore = behaviorScore
+
+	if err := s.DB.Save(&user).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"time"
 
 	"github.com/ady243/teamup/internal/models"
+	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
 
@@ -23,22 +25,71 @@ func NewMatchService(db *gorm.DB, chatService *ChatService) *MatchService {
 	}
 }
 
-// CreateMatch crée un nouveau match dans la base de données
-func (s *MatchService) CreateMatch(match *models.Matches) error {
+// CreateMatch crée un nouveau match dans la base de données et met à jour le rôle de l'utilisateur
+func (s *MatchService) CreateMatch(match *models.Matches, userID string) error {
+	// Générer un nouvel ID pour le match
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+	newID := ulid.MustNew(ulid.Timestamp(time.Now()), entropy)
+	match.ID = newID.String()
+	match.OrganizerID = userID
+	match.Status = models.Upcoming
+
+	// Ajouter le rôle "organizer" à l'utilisateur
+	var user models.Users
+	if err := s.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		return err
+	}
+	user.Role = models.Organizer
+	if err := s.DB.Save(&user).Error; err != nil {
+		return err
+	}
+
+	// Créer le match dans la base de données
 	if err := s.DB.Create(match).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
+// CheckAndResetRole vérifie si le match a expiré et réinitialise le rôle de l'utilisateur
+func (s *MatchService) CheckAndResetRole(matchID string) error {
+	var match models.Matches
+	if err := s.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
+		return err
+	}
+
+	// Vérifier si le match a expiré
+	if match.EndTime.Before(time.Now()) {
+		var user models.Users
+		if err := s.DB.Where("id = ?", match.OrganizerID).First(&user).Error; err != nil {
+			return err
+		}
+
+		// Réinitialiser le rôle de l'utilisateur à "player"
+		user.Role = models.Player
+		if err := s.DB.Save(&user).Error; err != nil {
+			return err
+		}
+
+		// Mettre à jour le statut du match à "expired"
+		match.Status = models.Expired
+		if err := s.DB.Save(&match).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Méthode pour récupérer tous les matchs avec préchargement des informations de l'organisateur
 func (s *MatchService) GetAllMatches() ([]models.Matches, error) {
-    var matches []models.Matches
-    if err := s.DB.Preload("Organizer").Where("deleted_at IS NULL").Find(&matches).Error; err != nil {
-        return nil, err
-    }
-    return matches, nil
+	var matches []models.Matches
+	if err := s.DB.Preload("Organizer").Where("deleted_at IS NULL").Find(&matches).Error; err != nil {
+		return nil, err
+	}
+	return matches, nil
 }
+
 // GetMatchByID récupère un match par son ID
 func (s *MatchService) GetMatchByID(matchID string) (*models.Matches, error) {
 	var match models.Matches

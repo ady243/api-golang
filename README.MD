@@ -102,3 +102,6 @@ npm install cdktf constructs @cdktf/provider-google dotenv
 
 # Déployer l'infrastructure avec CDKTF
 cdktf deploy
+
+
+- organizer : peu donné accées au player pour qu'il soit refere 
