@@ -39,10 +39,6 @@ func (s *MatchService) CreateMatch(match *models.Matches, userID string) error {
 	if err := s.DB.Where("id = ?", userID).First(&user).Error; err != nil {
 		return err
 	}
-	user.Role = models.Organizer
-	if err := s.DB.Save(&user).Error; err != nil {
-		return err
-	}
 
 	// Créer le match dans la base de données
 	if err := s.DB.Create(match).Error; err != nil {
@@ -52,7 +48,7 @@ func (s *MatchService) CreateMatch(match *models.Matches, userID string) error {
 }
 
 // CheckAndResetRole vérifie si le match a expiré et réinitialise le rôle de l'utilisateur
-func (s *MatchService) CheckAndResetRole(matchID string) error {
+func (s *MatchService) VerifyAndResetRole(matchID string) error {
 	var match models.Matches
 	if err := s.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
 		return err
@@ -62,12 +58,6 @@ func (s *MatchService) CheckAndResetRole(matchID string) error {
 	if match.EndTime.Before(time.Now()) {
 		var user models.Users
 		if err := s.DB.Where("id = ?", match.OrganizerID).First(&user).Error; err != nil {
-			return err
-		}
-
-		// Réinitialiser le rôle de l'utilisateur à "player"
-		user.Role = models.Player
-		if err := s.DB.Save(&user).Error; err != nil {
 			return err
 		}
 

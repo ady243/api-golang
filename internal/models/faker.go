@@ -36,7 +36,6 @@ func GenerateFakeUser() Users {
 		UpdatedAt:     now,
 		DeletedAt:     nil,
 		BirthDate:     &birthDate,
-		Role:          Role(randomStringElement([]string{"player", "referee", "administrator"})),
 		ProfilePhoto:  "https://example.com/photo" + ulid.Make().String(),
 		FavoriteSport: "sport" + ulid.Make().String(),
 		SkillLevel:    "level" + ulid.Make().String(),

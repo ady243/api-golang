@@ -6,12 +6,6 @@ import (
 
 type Role string
 
-const (
-    Player        Role = "player"
-    Referee       Role = "referee"
-    Organizer Role = "organizer"
-)
-
 type Users struct {
 	ID           string     `json:"id" gorm:"primaryKey;type:varchar(26)"`
 	Username     string     `json:"username"`
@@ -21,7 +15,6 @@ type Users struct {
 	DeletedAt    *time.Time `json:"deleted_at" gorm:"index"`
 
 	BirthDate     *time.Time `json:"birth_date"`
-	Role          Role       `json:"role"`
 	ProfilePhoto  string     `json:"profile_photo"`
 	FavoriteSport string     `json:"favorite_sport"`
 	Location      string     `json:"location"`

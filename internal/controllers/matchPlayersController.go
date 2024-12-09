@@ -85,7 +85,6 @@ func (ctrl *MatchPlayersController) GetMatchPlayersByMatchIDHandler(c *fiber.Ctx
 		playerStats[i] = PlayerResponse{
 			ID:            matchPlayer.Player.ID,
 			Username:      matchPlayer.Player.Username,
-			Role:          string(matchPlayer.Player.Role),
 			ProfilePhoto:  matchPlayer.Player.ProfilePhoto,
 			FavoriteSport: matchPlayer.Player.FavoriteSport,
 			Location:      matchPlayer.Player.Location,
@@ -167,7 +166,6 @@ func (ctrl *MatchPlayersController) CreateMatchPlayerHandler(c *fiber.Ctx) error
 		"player": PlayerResponse{
 			ID:            player.ID,
 			Username:      player.Username,
-			Role:          string(player.Role),
 			ProfilePhoto:  player.ProfilePhoto,
 			FavoriteSport: player.FavoriteSport,
 			Location:      player.Location,

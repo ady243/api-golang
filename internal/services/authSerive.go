@@ -100,7 +100,7 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	accessToken, err := middlewares.GenerateToken(userID, user.Role)
+	accessToken, err := middlewares.GenerateToken(userID)
 	if err != nil {
 		return "", "", err
 	}
@@ -109,7 +109,7 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	refreshToken, err := middlewares.GenerateRefreshToken(userID, user.Role)
+	refreshToken, err := middlewares.GenerateRefreshToken(userID)
 	if err != nil {
 		return "", "", err
 	}
@@ -160,9 +160,6 @@ func (s *AuthService) UpdateUser(id, username, email, password, profilePhoto, fa
 	}
 	if birthDate != nil {
 		user.BirthDate = birthDate
-	}
-	if role != "" {
-		user.Role = role
 	}
 	if skillLevel != "" {
 		user.SkillLevel = skillLevel
@@ -243,7 +240,7 @@ func (s *AuthService) Refresh(refreshToken string) (string, error) {
 		return "", errors.New("refresh token expired")
 	}
 
-	accessToken, err := middlewares.GenerateToken(claims.UserID, claims.Role)
+	accessToken, err := middlewares.GenerateToken(claims.UserID)
 	if err != nil {
 		return "", err
 	}
@@ -311,7 +308,7 @@ func (s *AuthService) GetPublicUserInfoByID(id string) (models.Users, error) {
 
 func (s *AuthService) AssignRefereeRole(organizerID, playerID string) error {
 	var organizer models.Users
-	if err := s.DB.Where("id = ? AND role = ?", organizerID, models.Organizer).First(&organizer).Error; err != nil {
+	if err := s.DB.Where("id = ? AND role = ?", organizerID).First(&organizer).Error; err != nil {
 		return errors.New("only organizers can assign referee role")
 	}
 
@@ -320,7 +317,6 @@ func (s *AuthService) AssignRefereeRole(organizerID, playerID string) error {
 	if err := s.DB.Where("id = ?", playerID).First(&player).Error; err != nil {
 		return err
 	}
-	player.Role = models.Referee
 	if err := s.DB.Save(&player).Error; err != nil {
 		return err
 	}
@@ -328,42 +324,7 @@ func (s *AuthService) AssignRefereeRole(organizerID, playerID string) error {
 	return nil
 }
 
-func (s *AuthService) CheckAndResetRole(matchID string) error {
-	var match models.Matches
-	if err := s.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
-		return err
-	}
 
-	if match.EndTime.Before(time.Now()) {
-		var user models.Users
-		if err := s.DB.Where("id = ?", match.OrganizerID).First(&user).Error; err != nil {
-			return err
-		}
-		user.Role = models.Player
-		if err := s.DB.Save(&user).Error; err != nil {
-			return err
-		}
-
-		if match.RefereeID != nil {
-			var referee models.Users
-			if err := s.DB.Where("id = ?", *match.RefereeID).First(&referee).Error; err != nil {
-				return err
-			}
-			referee.Role = models.Player
-			if err := s.DB.Save(&referee).Error; err != nil {
-				return err
-			}
-		}
-
-		// Mettre à jour le statut du match à "expired"
-		match.Status = models.Expired
-		if err := s.DB.Save(&match).Error; err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
 
 func (s *AuthService) UpdateUserStatistics(userID string, matchesPlayed, matchesWon, goalsScored, behaviorScore int) error {
 	var user models.Users

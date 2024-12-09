@@ -52,14 +52,14 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 	if req.Role == "" {
 		req.Role = "Player"
 	}
-	role := models.Role(req.Role)
+
 
 	userInfo := models.Users{
 		Username:          req.Username,
 		Email:             req.Email,
 		PasswordHash:      req.Password,
 		Location:          req.Location,
-		Role:              role,
+
 		ConfirmationToken: ulid.MustNew(ulid.Timestamp(time.Now()), ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)).String(),
 	}
 
@@ -266,7 +266,6 @@ func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
 		// Si l'utilisateur n'existe pas, créez un nouvel utilisateur
 		user, err = ctrl.AuthService.RegisterUser(models.Users{
 			Email: userInfo.Email,
-			Role:  models.Role("Player"),
 		})
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to register user"})
@@ -278,7 +277,7 @@ func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to parse user ID"})
 	}
-	accessToken, err := middlewares.GenerateToken(userID, user.Role)
+	accessToken, err := middlewares.GenerateToken(userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to generate access token"})
 	}
@@ -470,27 +469,6 @@ func (ctrl *AuthController) AssignRefereeRole(c *fiber.Ctx) error {
 
     return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role assigned successfully"})
 }
-
-//CheckAndResetRole gère la vérification et la réinitialisation du rôle de l'utilisateur
-// @Summary Vérifier et réinitialiser le rôle de l'utilisateur
-// @Description Vérifier si le match a expiré et réinitialiser le rôle de l'utilisateur
-// @Tags Auth
-// @Produce json
-// @Param matchID path string true "Match ID"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Failure 401 {object} map[string]interface{}
-func (ctrl *AuthController) CheckAndResetRole(c *fiber.Ctx) error {
-	matchID := c.Params("matchID")
-
-	err := ctrl.AuthService.CheckAndResetRole(matchID)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role reset successfully"})
-}
-
 
 
 // @Summary Mettre à jour les statistiques d'un joueur

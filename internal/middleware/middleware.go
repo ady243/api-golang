@@ -22,14 +22,13 @@ type Claims struct {
 // GenerateToken génère un nouveau token JWT pour un utilisateur donné
 //
 // Le token est valable pour 24h.
-func GenerateToken(userID ulid.ULID, role models.Role) (string, error) {
+func GenerateToken(userID ulid.ULID) (string, error) {
     secretKey := os.Getenv("SECRET_KEY")
     if secretKey == "" {
         return "", errors.New("SECRET_KEY not found")
     }
     claims := Claims{
         UserID: userID,
-        Role:   role,
         StandardClaims: jwt.StandardClaims{
             ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
             IssuedAt:  time.Now().Unix(),
@@ -72,14 +71,13 @@ func ParseToken(tokenString string) (*Claims, error) {
 // The token is valid for 72 hours.
 // It requires a valid SECRET_KEY environment variable.
 // Returns the signed token as a string or an error if the secret key is missing.
-func GenerateRefreshToken(userID ulid.ULID, role models.Role) (string, error) {
+func GenerateRefreshToken(userID ulid.ULID) (string, error) {
     secretKey := os.Getenv("SECRET_KEY")
     if secretKey == "" {
         return "", errors.New("SECRET_KEY not found")
     }
     claims := Claims{
         UserID: userID,
-        Role:   role,
         StandardClaims: jwt.StandardClaims{
             ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
             IssuedAt:  time.Now().Unix(),
