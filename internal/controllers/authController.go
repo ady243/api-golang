@@ -17,15 +17,17 @@ import (
 type AuthController struct {
 	AuthService  *services.AuthService
 	ImageService *services.ImageService
+	MatchService *services.MatchService
 }
 
 // NewAuthController creates a new instance of AuthController.
 // It requires an AuthService and an ImageService to handle authentication
 // and image-related operations, respectively.
-func NewAuthController(authService *services.AuthService, imageService *services.ImageService) *AuthController {
+func NewAuthController(authService *services.AuthService, imageService *services.ImageService, matchService *services.MatchService) *AuthController {
 	return &AuthController{
 		AuthService:  authService,
 		ImageService: imageService,
+		MatchService: matchService,
 	}
 }
 
@@ -390,8 +392,17 @@ func (ctrl *AuthController) DeleteUserHandler(c *fiber.Ctx) error {
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
+	matchId, ok := c.Locals("match_id").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid match ID"})
+	}
 
 	err := ctrl.AuthService.DeleteUser(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	err = ctrl.MatchService.DeleteMatch(userID, matchId)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}

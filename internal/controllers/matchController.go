@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/ady243/teamup/internal/models"
@@ -323,35 +322,35 @@ func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 // A soft delete is performed by setting the DeletedAt field to the current time.
 // The match is removed from the chat and all players are removed from the match as well.
 func (ctrl *MatchController) DeleteMatchHandler(c *fiber.Ctx) error {
-    id := c.Params("id")
-    log.Println("Match ID:", id)
+	id := c.Params("id")
+	log.Println("Match ID:", id)
 
-    // Parse l'ID du match
-    matchID, err := ulid.Parse(id)
-    if err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
-    }
+	// Parse l'ID du match
+	matchID, err := ulid.Parse(id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+	}
 
-    // Récupère l'ID de l'utilisateur connecté
-    userID := c.Locals("user_id").(string)
+	// Récupère l'ID de l'utilisateur connecté
+	userID := c.Locals("user_id").(string)
 
-    // Récupère le match à partir de son ID
-    match, err := ctrl.MatchService.GetMatchByID(matchID.String())
-    if err != nil {
-        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
-    }
+	// Récupère le match à partir de son ID
+	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
+	}
 
-    // Vérifie si l'utilisateur connecté est l'organisateur du match
-    if match.OrganizerID != userID {
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to delete this match"})
-    }
+	// Vérifie si l'utilisateur connecté est l'organisateur du match
+	if match.OrganizerID != userID {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to delete this match"})
+	}
 
-    // Effectue la suppression douce via le service
-    if err := ctrl.MatchService.DeleteMatch(matchID.String(), userID); err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-    }
+	// Effectue la suppression douce via le service
+	if err := ctrl.MatchService.DeleteMatch(matchID.String(), userID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    return c.SendStatus(fiber.StatusNoContent)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (ctrl *MatchController) ChatWebSocketHandler(c *websocket.Conn) {
@@ -428,18 +427,20 @@ func (ctrl *MatchController) AddPlayerToMatchHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "Joined match and chat"})
 }
 
+// Handler pour obtenir les matchs proches basés sur l'utilisateur connecté
 func (ctrl *MatchController) GetNearbyMatchesHandler(c *fiber.Ctx) error {
-	lat, err := strconv.ParseFloat(c.Query("lat"), 64)
+	userID := c.Locals("user_id").(string)
+
+	user, err := ctrl.AuthService.GetUserByID(userID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid latitude"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not retrieve user"})
 	}
 
-	lon, err := strconv.ParseFloat(c.Query("lon"), 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid longitude"})
+	if user.Latitude == 0 || user.Longitude == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "User location not set"})
 	}
 
-	matches, err := ctrl.MatchService.FindNearbyMatches(lat, lon, 6.0)
+	matches, err := ctrl.MatchService.FindNearbyMatches(user.Latitude, user.Longitude, 6.0)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -452,6 +453,17 @@ func (ctrl *MatchController) GetNearbyMatchesHandler(c *fiber.Ctx) error {
 func (ctrl *MatchController) GetMatchByOrganizerIDHandler(c *fiber.Ctx) error {
 	organizerID := c.Locals("user_id").(string)
 	matches, err := ctrl.MatchService.GetMatchByOrganizerID(organizerID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(matches)
+}
+
+// GetMatchByOrganizerIDHandler gets all matches created by the organizer with the given ID.
+// The ID is retrieved from the user_id key in the context.
+func (ctrl *MatchController) GetMatchByRefereeIDHandler(c *fiber.Ctx) error {
+	refereeID := c.Locals("user_id").(string)
+	matches, err := ctrl.MatchService.GetMatchByRefereeID(refereeID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}

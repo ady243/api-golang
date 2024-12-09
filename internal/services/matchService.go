@@ -208,3 +208,12 @@ func (s *MatchService) GetMatchByOrganizerID(organizerID string) ([]models.Match
 	}
 	return matches, nil
 }
+
+// GetMatchByOrganizerID récupère les matchs par l'ID de l'organisateur
+func (s *MatchService) GetMatchByRefereeID(refereeID string) ([]models.Matches, error) {
+	var matches []models.Matches
+	if err := s.DB.Where("referee_id = ? AND deleted_at IS NULL", refereeID).Find(&matches).Error; err != nil {
+		return nil, err
+	}
+	return matches, nil
+}

@@ -45,9 +45,10 @@ func Run() {
 	// Initialize services and controllers
 	imageService := services.NewImageService("./uploads")
 	emailService := services.NewEmailService()
-	authService := services.NewAuthService(db, imageService, emailService)
-	authController := controllers.NewAuthController(authService, imageService)
 	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient))
+	authService := services.NewAuthService(db, imageService, emailService)
+	authController := controllers.NewAuthController(authService, imageService, matchService)
+	matchService = services.NewMatchService(db, services.NewChatService(db, redisClient))
 	openAIService := services.NewOpenAIService()
 	chatService := services.NewChatService(db, redisClient)
 	matchController := controllers.NewMatchController(matchService, authService, db, chatService)
