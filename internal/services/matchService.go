@@ -167,3 +167,13 @@ func (s *MatchService) GetMatchByRefereeID(refereeID string) ([]models.Matches, 
 	}
 	return matches, nil
 }
+
+// PutRefereeID met à jour la table Matches pour y inscrire le RefereeID
+func (s *MatchService) PutRefereeID(matcheID string, refereeID string) error {
+	if err := s.DB.Model(&models.Matches{}).
+		Where("id = ? AND deleted_at IS NULL", matcheID).
+		Update("referee_id", refereeID).Error; err != nil {
+		return err
+	}
+	return nil
+}

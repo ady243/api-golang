@@ -459,7 +459,7 @@ func (ctrl *MatchController) GetMatchByOrganizerIDHandler(c *fiber.Ctx) error {
 	return c.JSON(matches)
 }
 
-// GetMatchByOrganizerIDHandler gets all matches created by the organizer with the given ID.
+// GetMatchByRefereeIDHandler gets all matches where the user with the given ID is referee.
 // The ID is retrieved from the user_id key in the context.
 func (ctrl *MatchController) GetMatchByRefereeIDHandler(c *fiber.Ctx) error {
 	refereeID := c.Locals("user_id").(string)
@@ -468,4 +468,29 @@ func (ctrl *MatchController) GetMatchByRefereeIDHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(matches)
+}
+
+// PutRefereeIDHandler met à jour le referee_id pour un match donné.
+func (ctrl *MatchController) PutRefereeIDHandler(c *fiber.Ctx) error {
+	var req struct {
+		MatchID   string `json:"match_id" binding:"required"`
+		RefereeID string `json:"referee_id" binding:"required"`
+	}
+
+	// Parse le corps de la requête
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	// Vérification si l'utilisateur est l'organisateur du match
+	if !ctrl.AuthService.IsOrganizer(req.MatchID, c.Locals("user_id").(string)) {
+		return c.Status(fiber.StatusForbidden).JSON(map[string]interface{}{"error": "Unauthorized"})
+	}
+
+	// Mise à jour du referee_id pour le match spécifié
+	if err := ctrl.MatchService.PutRefereeID(req.MatchID, req.RefereeID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Referee ID updated successfully"})
 }
