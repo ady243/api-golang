@@ -460,15 +460,15 @@ func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
 func (ctrl *AuthController) AssignRefereeRole(c *fiber.Ctx) error {
-	organizerID := c.Params("organizerID")
-	playerID := c.Params("playerID")
+    organizerID := c.Params("organizerID")
+    playerID := c.Params("playerID")
 
-	err := ctrl.AuthService.AssignRefereeRole(organizerID, playerID)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
+    err := ctrl.AuthService.AssignRefereeRole(organizerID, playerID)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role assigned successfully"})
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role assigned successfully"})
 }
 
 //CheckAndResetRole gère la vérification et la réinitialisation du rôle de l'utilisateur
