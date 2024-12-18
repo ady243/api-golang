@@ -232,3 +232,29 @@ func (s *MatchService) NotifyMatchStatusUpdate(matchID string, status string) er
 
     return s.ChatService.RedisClient.Publish(context.Background(), "match_status_updates", messageJSON).Err()
 }
+
+func (s *MatchService) UpdateMatchStatuses() error {
+    var matches []models.Matches
+    if err := s.DB.Where("status IN (?)", []string{string(models.Upcoming), string(models.Ongoing)}).Find(&matches).Error; err != nil {
+        return err
+    }
+
+    now := time.Now()
+    for _, match := range matches {
+        matchDateTime := time.Date(match.MatchDate.Year(), match.MatchDate.Month(), match.MatchDate.Day(), match.MatchTime.Hour(), match.MatchTime.Minute(), match.MatchTime.Second(), 0, time.UTC)
+        if matchDateTime.Before(now) && match.Status == models.Upcoming {
+            match.Status = models.Ongoing
+        }
+        if match.EndTime.Before(now) && match.Status == models.Ongoing {
+            match.Status = models.Completed
+        }
+        if match.EndTime.Add(24 * time.Hour).Before(now) && match.Status == models.Completed {
+            match.Status = models.Expired
+        }
+        if err := s.DB.Save(&match).Error; err != nil {
+            return err
+        }
+    }
+
+    return nil
+}
