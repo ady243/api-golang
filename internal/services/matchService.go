@@ -1,6 +1,8 @@
 package services
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -216,4 +218,17 @@ func (s *MatchService) PutRefereeID(matcheID string, refereeID string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *MatchService) NotifyMatchStatusUpdate(matchID string, status string) error {
+    message := map[string]string{
+        "match_id": matchID,
+        "status":   status,
+    }
+    messageJSON, err := json.Marshal(message)
+    if err != nil {
+        return err
+    }
+
+    return s.ChatService.RedisClient.Publish(context.Background(), "match_status_updates", messageJSON).Err()
 }
