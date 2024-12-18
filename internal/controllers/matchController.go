@@ -224,19 +224,19 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 }
 
 func (ctrl *MatchController) GetMatchByIDHandler(c *fiber.Ctx) error {
-	id := c.Params("id")
+    id := c.Params("id")
 
-	matchID, err := ulid.Parse(id)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
-	}
+    matchID, err := ulid.Parse(id)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+    }
 
-	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
-	}
+    match, err := ctrl.MatchService.GetMatchByID(matchID.String())
+    if err != nil {
+        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
+    }
 
-	return c.Status(fiber.StatusOK).JSON(match)
+    return c.Status(fiber.StatusOK).JSON(match)
 }
 
 func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {

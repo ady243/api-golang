@@ -82,14 +82,14 @@ func (s *MatchService) GetAllMatches() ([]models.Matches, error) {
 
 // GetMatchByID récupère un match par son ID
 func (s *MatchService) GetMatchByID(matchID string) (*models.Matches, error) {
-	var match models.Matches
-	if err := s.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("match not found")
-		}
-		return nil, err
-	}
-	return &match, nil
+    var match models.Matches
+    if err := s.DB.Preload("Organizer").Where("id = ?", matchID).First(&match).Error; err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return nil, errors.New("match not found")
+        }
+        return nil, err
+    }
+    return &match, nil
 }
 
 // UpdateMatch met à jour un match existant dans la base de données
