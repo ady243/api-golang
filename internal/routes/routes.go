@@ -52,6 +52,7 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
     api.Get("/referee/matches", controller.GetMatchByRefereeIDHandler)
     api.Put("/assignAsAnalyst/:match_id/:referee_id", controller.PutRefereeIDHandler)
     api.Get("/status/updates", websocket.New(controller.MatchStatusWebSocketHandler)) 
+    api.Post("/update-statuses", controller.UpdateMatchStatusesHandler) // Ajoutez cette ligne
 }
 
 // SetupRoutesMatchePlayers sets up the routes for managing match players.

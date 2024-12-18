@@ -532,3 +532,10 @@ func (ctrl *MatchController) MatchStatusWebSocketHandler(c *websocket.Conn) {
         }
     }
 }
+
+func (ctrl *MatchController) UpdateMatchStatusesHandler(c *fiber.Ctx) error {
+    if err := ctrl.MatchService.UpdateMatchStatuses(); err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not update match statuses"})
+    }
+    return c.SendStatus(fiber.StatusOK)
+}
