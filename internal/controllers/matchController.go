@@ -178,7 +178,6 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("Failed to geocode address: %v", err)})
 	}
 
-	// Crée un nouveau match avec les informations fournies
 	match := &models.Matches{
 		ID:              matchID,
 		OrganizerID:     user.ID,
@@ -193,7 +192,6 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 		Longitude:       lng,
 	}
 
-	// Gestion de l'arbitre si présent
 	if req.RefereeID != nil {
 		refereeID, err := ulid.Parse(*req.RefereeID)
 		if err != nil {
@@ -203,19 +201,16 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 		match.RefereeID = &refereeIDStr
 	}
 
-	// Enregistre le match dans la base de données
 	if err := ctrl.MatchService.CreateMatch(match, user.ID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Crée un objet simplifié pour l'organisateur à inclure dans la réponse
 	organizer := fiber.Map{
 		"id":            user.ID,
 		"username":      user.Username,
 		"profile_photo": user.ProfilePhoto,
 	}
 
-	// Retourne le match avec les infos de l'organisateur
 	matchWithOrganizer := fiber.Map{
 		"id":                match.ID,
 		"organizer_id":      match.OrganizerID,
@@ -234,6 +229,7 @@ func (ctrl *MatchController) CreateMatchHandler(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(matchWithOrganizer)
 }
+
 func (ctrl *MatchController) GetMatchByIDHandler(c *fiber.Ctx) error {
 	id := c.Params("id")
 
