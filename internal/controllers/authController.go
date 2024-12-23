@@ -336,12 +336,15 @@ func (ctrl *AuthController) RefreshHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	newAccessToken, err := ctrl.AuthService.Refresh(req.RefreshToken)
+	newAccessToken, newRefreshToken, err := ctrl.AuthService.Refresh(req.RefreshToken)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": newAccessToken})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"accessToken":  newAccessToken,
+		"refreshToken": newRefreshToken,
+	})
 }
 
 func (ctrl *AuthController) ConfirmEmailHandler(c *fiber.Ctx) error {
