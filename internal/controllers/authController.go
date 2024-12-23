@@ -53,12 +53,11 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 		req.Role = "Player"
 	}
 
-
 	userInfo := models.Users{
-		Username:          req.Username,
-		Email:             req.Email,
-		PasswordHash:      req.Password,
-		Location:          req.Location,
+		Username:     req.Username,
+		Email:        req.Email,
+		PasswordHash: req.Password,
+		Location:     req.Location,
 
 		ConfirmationToken: ulid.MustNew(ulid.Timestamp(time.Now()), ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)).String(),
 	}
@@ -213,23 +212,14 @@ func (ctrl *AuthController) UserUpdate(c *fiber.Ctx) error {
 // @Produce json
 // @Success 302 {string} string
 // @Router /api/auth/google [get]
+// GoogleLogin redirige l'utilisateur vers la page de connexion Google
+// GoogleLogin redirige l'utilisateur vers la page de connexion Google
 func (ctrl *AuthController) GoogleLogin(c *fiber.Ctx) error {
 	url := ctrl.AuthService.GoogleOauthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	return c.Redirect(url)
 }
 
 // GoogleCallback gère le callback de Google après l'authentification
-// @Summary Gérer le callback de Google après l'authentification
-// @Description Gérer le callback de Google après l'authentification
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Param idToken body string true "ID Token"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Failure 401 {object} map[string]interface{}
-// @Failure 500 {object} map[string]interface{}
-// @Router /api/auth/google/callback [get]
 func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
 	var req struct {
 		IDToken string `json:"idToken"`
@@ -447,7 +437,6 @@ func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
 	return c.JSON(publicInfo)
 }
 
-
 // @Summary Attribuer le rôle d'arbitre à un joueur
 // @Description Attribuer le rôle d'arbitre à un joueur
 // @Tags Auth
@@ -459,17 +448,16 @@ func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
 func (ctrl *AuthController) AssignRefereeRole(c *fiber.Ctx) error {
-    organizerID := c.Params("organizerID")
-    playerID := c.Params("playerID")
+	organizerID := c.Params("organizerID")
+	playerID := c.Params("playerID")
 
-    err := ctrl.AuthService.AssignRefereeRole(organizerID, playerID)
-    if err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-    }
+	err := ctrl.AuthService.AssignRefereeRole(organizerID, playerID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role assigned successfully"})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role assigned successfully"})
 }
-
 
 // @Summary Mettre à jour les statistiques d'un joueur
 // @Description Mettre à jour les statistiques d'un joueur
@@ -481,22 +469,22 @@ func (ctrl *AuthController) AssignRefereeRole(c *fiber.Ctx) error {
 // @Failure 400 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
 func (ctrl *AuthController) UpdateUserStatistics(c *fiber.Ctx) error {
-    userID := c.Params("id")
-    var stats struct {
-        MatchesPlayed int `json:"matchesPlayed"`
-        MatchesWon    int `json:"matchesWon"`
-        GoalsScored   int `json:"goalsScored"`
-        BehaviorScore int `json:"behaviorScore"`
-    }
+	userID := c.Params("id")
+	var stats struct {
+		MatchesPlayed int `json:"matchesPlayed"`
+		MatchesWon    int `json:"matchesWon"`
+		GoalsScored   int `json:"goalsScored"`
+		BehaviorScore int `json:"behaviorScore"`
+	}
 
-    if err := c.BodyParser(&stats); err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-    }
+	if err := c.BodyParser(&stats); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    err := ctrl.AuthService.UpdateUserStatistics(userID, stats.MatchesPlayed, stats.MatchesWon, stats.GoalsScored, stats.BehaviorScore)
-    if err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-    }
+	err := ctrl.AuthService.UpdateUserStatistics(userID, stats.MatchesPlayed, stats.MatchesWon, stats.GoalsScored, stats.BehaviorScore)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User statistics updated successfully"})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User statistics updated successfully"})
 }
