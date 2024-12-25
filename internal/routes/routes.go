@@ -101,5 +101,5 @@ func SetupOpenAiRoutes(app *fiber.App, controller *controllers.OpenAiController)
 func SetupRoutesWebSocket(app *fiber.App, controller *controllers.WebSocketController) {
 	api := app.Group("/api")
 	api.Use(middlewares.JWTMiddleware)
-	api.Get("/status/updates", websocket.New(controller.WebSocketHandler))
+	api.Get("/matches/status/updates", websocket.New(controller.WebSocketHandler))
 }
