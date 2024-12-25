@@ -100,6 +100,5 @@ func SetupOpenAiRoutes(app *fiber.App, controller *controllers.OpenAiController)
 //   - GET /api/matches/status/updates: WebSocket route for receiving match status updates.
 func SetupRoutesWebSocket(app *fiber.App, controller *controllers.WebSocketController) {
 	api := app.Group("/api")
-	api.Use(middlewares.JWTMiddleware)
 	api.Get("/matches/status/updates", websocket.New(controller.WebSocketHandler))
 }
