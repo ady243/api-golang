@@ -50,6 +50,7 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
 	api.Get("/:id/chat", websocket.New(controller.ChatWebSocketHandler))
 	api.Get("/organizer/matches", controller.GetMatchByOrganizerIDHandler)
 	api.Get("/referee/matches", controller.GetMatchByRefereeIDHandler)
+	api.Get("/matches/status/updates", websocket.New(controller.MatchStatusWebSocketHandler))
 	api.Put("/assignAsAnalyst/:match_id/:referee_id", controller.PutRefereeIDHandler)
 }
 
@@ -92,4 +93,12 @@ func SetupOpenAiRoutes(app *fiber.App, controller *controllers.OpenAiController)
 	api := app.Group("/api")
 	api.Use(middlewares.JWTMiddleware)
 	api.Get("/openai/formation/:match_id", controller.GetFormationFromAi)
+}
+
+// SetupRoutesWebSocket sets up the routes for managing WebSocket connections.
+// It will create an "api" group and add the following routes:
+//   - GET /api/matches/status/updates: WebSocket route for receiving match status updates.
+func SetupRoutesWebSocket(app *fiber.App, controller *controllers.WebSocketController) {
+	api := app.Group("/api")
+	api.Get("/matches/status/updatess", websocket.New(controller.WebSocketHandler))
 }

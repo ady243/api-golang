@@ -1,13 +1,17 @@
 package services
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"time"
 
 	"github.com/ady243/teamup/internal/models"
+	"github.com/go-redis/redis/v8"
 	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
@@ -16,12 +20,14 @@ import (
 type MatchService struct {
 	DB          *gorm.DB
 	ChatService *ChatService
+	RedisClient *redis.Client
 }
 
-func NewMatchService(db *gorm.DB, chatService *ChatService) *MatchService {
+func NewMatchService(db *gorm.DB, chatService *ChatService, redisClient *redis.Client) *MatchService {
 	return &MatchService{
 		DB:          db,
 		ChatService: chatService,
+		RedisClient: redisClient,
 	}
 }
 
@@ -83,7 +89,7 @@ func (s *MatchService) GetAllMatches() ([]models.Matches, error) {
 // GetMatchByID récupère un match par son ID
 func (s *MatchService) GetMatchByID(matchID string) (*models.Matches, error) {
 	var match models.Matches
-	if err := s.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
+	if err := s.DB.Preload("Organizer").Where("id = ?", matchID).First(&match).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("match not found")
 		}
@@ -214,6 +220,52 @@ func (s *MatchService) PutRefereeID(matcheID string, refereeID string) error {
 		Where("id = ? AND deleted_at IS NULL", matcheID).
 		Update("referee_id", refereeID).Error; err != nil {
 		return err
+	}
+	return nil
+}
+
+func (s *MatchService) NotifyMatchStatusUpdate(matchID string, status string) error {
+	message := map[string]string{
+		"match_id": matchID,
+		"status":   status,
+	}
+	messageJSON, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
+
+	return s.RedisClient.Publish(context.Background(), "match_status_updates", messageJSON).Err()
+}
+
+func (s *MatchService) UpdateMatchStatuses() error {
+	var matches []models.Matches
+	if err := s.DB.Find(&matches).Error; err != nil {
+		return err
+	}
+
+	now := time.Now()
+	for _, match := range matches {
+		if match.Status != models.Completed && match.Status != models.Expired {
+			matchStart := time.Date(match.MatchDate.Year(), match.MatchDate.Month(), match.MatchDate.Day(), match.MatchTime.Hour(), match.MatchTime.Minute(), match.MatchTime.Second(), 0, time.UTC)
+			matchEnd := time.Date(match.MatchDate.Year(), match.MatchDate.Month(), match.MatchDate.Day(), match.EndTime.Hour(), match.EndTime.Minute(), match.EndTime.Second(), 0, time.UTC)
+
+			if now.After(matchStart) && now.Before(matchEnd) {
+				match.Status = models.Ongoing
+			} else if now.After(matchEnd) {
+				match.Status = models.Completed
+			} else if now.Before(matchStart) {
+				match.Status = models.Upcoming
+			}
+
+			if err := s.DB.Save(&match).Error; err != nil {
+				return err
+			}
+
+			// Notifier les clients de la mise à jour du statut du match
+			if err := s.NotifyMatchStatusUpdate(match.ID, string(match.Status)); err != nil {
+				log.Println("Erreur lors de la notification de la mise à jour du statut du match:", err)
+			}
+		}
 	}
 	return nil
 }

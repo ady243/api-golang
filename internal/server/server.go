@@ -45,17 +45,19 @@ func Run() {
 	// Initialize services and controllers
 	imageService := services.NewImageService("./uploads")
 	emailService := services.NewEmailService()
-	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient))
+	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
 	authService := services.NewAuthService(db, imageService, emailService)
 	authController := controllers.NewAuthController(authService, imageService, matchService)
-	matchService = services.NewMatchService(db, services.NewChatService(db, redisClient))
+	matchService = services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
 	openAIService := services.NewOpenAIService()
 	chatService := services.NewChatService(db, redisClient)
-	matchController := controllers.NewMatchController(matchService, authService, db, chatService)
+	webSocketService := services.NewWebSocketService()
+	matchController := controllers.NewMatchController(matchService, authService, db, chatService, redisClient)
 	matchPlayersService := services.NewMatchPlayersService(db)
 	matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db)
 	chatController := controllers.NewChatController(chatService)
 	openAiController := controllers.NewOpenAiController(openAIService, matchPlayersService)
+	webSocketController := controllers.NewWebSocketController(webSocketService)
 
 	// Configure Fiber app
 	app := fiber.New()
@@ -85,6 +87,7 @@ func Run() {
 	routes.SetupRoutesMatchePlayers(app, matchPlayersController)
 	routes.SetupChatRoutes(app, chatController)
 	routes.SetupOpenAiRoutes(app, openAiController)
+	routes.SetupRoutesWebSocket(app, webSocketController)
 
 	// Swagger route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
@@ -95,5 +98,18 @@ func Run() {
 		port = "3003"
 	}
 	log.Printf("Server started on port %s", port)
+	go webSocketService.StartBroadcast()
+
+	// Planifier la mise à jour des statuts des matchs toutes les minutes
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := matchService.UpdateMatchStatuses(); err != nil {
+				log.Printf("Erreur lors de la mise à jour des statuts des matchs : %v", err)
+			}
+		}
+	}()
+
 	log.Fatal(app.Listen(":" + port))
 }
