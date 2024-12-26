@@ -22,7 +22,7 @@ type MatchService struct {
 	RedisClient *redis.Client
 }
 
-func NewMatchService(db *gorm.DB, chatService *ChatService,  redisClient *redis.Client) *MatchService {
+func NewMatchService(db *gorm.DB, chatService *ChatService, redisClient *redis.Client) *MatchService {
 	return &MatchService{
 		DB:          db,
 		ChatService: chatService,
@@ -87,14 +87,14 @@ func (s *MatchService) GetAllMatches() ([]models.Matches, error) {
 
 // GetMatchByID récupère un match par son ID
 func (s *MatchService) GetMatchByID(matchID string) (*models.Matches, error) {
-    var match models.Matches
-    if err := s.DB.Preload("Organizer").Where("id = ?", matchID).First(&match).Error; err != nil {
-        if errors.Is(err, gorm.ErrRecordNotFound) {
-            return nil, errors.New("match not found")
-        }
-        return nil, err
-    }
-    return &match, nil
+	var match models.Matches
+	if err := s.DB.Preload("Organizer").Where("id = ?", matchID).First(&match).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("match not found")
+		}
+		return nil, err
+	}
+	return &match, nil
 }
 
 // UpdateMatch met à jour un match existant dans la base de données
@@ -224,49 +224,14 @@ func (s *MatchService) PutRefereeID(matcheID string, refereeID string) error {
 }
 
 func (s *MatchService) NotifyMatchStatusUpdate(matchID string, status string) error {
-    message := map[string]string{
-        "match_id": matchID,
-        "status":   status,
-    }
-    messageJSON, err := json.Marshal(message)
-    if err != nil {
-        return err
-    }
+	message := map[string]string{
+		"match_id": matchID,
+		"status":   status,
+	}
+	messageJSON, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
 
-    return s.ChatService.RedisClient.Publish(context.Background(), "match_status_updates", messageJSON).Err()
-}
-
-func (s *MatchService) UpdateMatchStatuses() error {
-    var matches []models.Matches
-    if err := s.DB.Find(&matches).Error; err != nil {
-        return err
-    }
-
-    now := time.Now()
-    for _, match := range matches {
-        matchDateTime := time.Date(match.MatchDate.Year(), match.MatchDate.Month(), match.MatchDate.Day(), match.MatchTime.Hour(), match.MatchTime.Minute(), match.MatchTime.Second(), 0, time.UTC)
-        var status string
-        if matchDateTime.After(now) {
-            status = "upcoming"
-        } else if matchDateTime.Before(now) && match.EndTime.After(now) {
-            status = "ongoing"
-        } else if match.EndTime.Before(now) {
-            status = "completed"
-        }
-
-        message := map[string]string{
-            "match_id": match.ID,
-            "status":   status,
-        }
-        messageJSON, err := json.Marshal(message)
-        if err != nil {
-            return err
-        }
-
-        if err := s.RedisClient.Publish(context.Background(), "match_status_updates", messageJSON).Err(); err != nil {
-            return err
-        }
-    }
-
-    return nil
+	return s.ChatService.RedisClient.Publish(context.Background(), "match_status_updates", messageJSON).Err()
 }

@@ -98,14 +98,6 @@ func Run() {
 		port = "3003"
 	}
 	log.Printf("Server started on port %s", port)
-	go func() {
-		for {
-			if err := matchService.UpdateMatchStatuses(); err != nil {
-				log.Printf("Error updating match statuses: %v", err)
-			}
-			time.Sleep(1 * time.Hour)
-		}
-	}()
 	go webSocketService.StartBroadcast()
 	log.Fatal(app.Listen(":" + port))
 }
