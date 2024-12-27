@@ -8,9 +8,6 @@ import (
 )
 
 // SetupRoutesAuth sets up the routes for the authentication feature.
-// @Summary Setup authentication routes
-// @Description Setup routes for user authentication
-// @Tags Auth
 func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api := app.Group("/api")
 
@@ -23,8 +20,8 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Get("/auth/google/callback", controller.GoogleCallback)
 	api.Get("/confirm_email", controller.ConfirmEmailHandler)
 	api.Put("/userUpdate", middlewares.JWTMiddleware, controller.UserUpdate)
-	// Routes that require authentication
 
+	// Routes that require authentication
 	api.Use(middlewares.JWTMiddleware)
 	api.Get("/userInfo", controller.UserHandler)
 	api.Delete("/deleteMyAccount", controller.DeleteUserHandler)
@@ -34,12 +31,12 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 }
 
 // SetupRoutesMatches sets up the routes for managing matches.
-// @Summary Setup match routes
-// @Description Setup routes for managing matches
-// @Tags Matches
 func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController) {
 	api := app.Group("/api/matches")
+
+	// All these routes require JWT auth
 	api.Use(middlewares.JWTMiddleware)
+
 	api.Get("/nearby", controller.GetNearbyMatchesHandler)
 	api.Get("/", controller.GetAllMatchesHandler)
 	api.Post("/", controller.CreateMatchHandler)
@@ -54,17 +51,12 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
 }
 
 // SetupRoutesMatchePlayers sets up the routes for managing match players.
-// It will create an "api/matchesPlayers" group and add the following routes:
-//   - GET /api/matchesPlayers/:match_id: Retrieves all match players associated
-//     with a given match ID.
-//   - POST /api/matchesPlayers/: Creates a new match player.
-//   - PUT /api/matchesPlayers/assignTeam: Assigns a team to a match player.
-//   - DELETE /api/matchesPlayers/:match_player_id: Deletes a match player.
 func SetupRoutesMatchePlayers(app *fiber.App, controller *controllers.MatchPlayersController) {
 	api := app.Group("/api/matchesPlayers")
 
-	// Routes that require authentication
+	// Require authentication
 	api.Use(middlewares.JWTMiddleware)
+
 	api.Get("/:match_id", controller.GetMatchPlayersByMatchIDHandler)
 	api.Post("/", controller.CreateMatchPlayerHandler)
 	api.Put("/assignTeam", controller.AssignTeamToPlayerHandler)
@@ -72,24 +64,43 @@ func SetupRoutesMatchePlayers(app *fiber.App, controller *controllers.MatchPlaye
 }
 
 // SetupChatRoutes sets up the routes for managing chat messages.
-// @Summary Setup chat routes
-// @Description Setup routes for managing chat messages
-// @Tags Chat
 func SetupChatRoutes(app *fiber.App, controller *controllers.ChatController) {
 	api := app.Group("/api")
 
-	// Routes that require authentication
+	// Require authentication
 	api.Use(middlewares.JWTMiddleware)
+
 	api.Post("/chat/send", controller.SendMessage)
 	api.Get("/chat/:matchID", controller.GetMessages)
 }
 
 // SetupOpenAiRoutes sets up the routes for using OpenAI services.
-// It will create an "api" group and add the following routes:
-//   - GET /api/openai/formation/:match_id: Retrieves a suggested formation
-//     for a given match ID, based on the statistics of the players in the match.
 func SetupOpenAiRoutes(app *fiber.App, controller *controllers.OpenAiController) {
 	api := app.Group("/api")
 	api.Use(middlewares.JWTMiddleware)
+
 	api.Get("/openai/formation/:match_id", controller.GetFormationFromAi)
+}
+
+// SetupRoutesAnalyst sets up the routes for managing Analyst events.
+func SetupRoutesAnalyst(app *fiber.App, controller *controllers.AnalystController) {
+	api := app.Group("/api/analyst")
+
+	// Require JWT auth for all Analyst routes
+	api.Use(middlewares.JWTMiddleware)
+
+	// Create a new event
+	api.Post("/events", controller.CreateEventHandler)
+
+	// Get all events for a match
+	api.Get("/match/:match_id/events", controller.GetEventsByMatchHandler)
+
+	// Get all events for a player
+	api.Get("/player/:player_id/events", controller.GetEventsByPlayerHandler)
+
+	// Update an existing event
+	api.Put("/events/:event_id", controller.UpdateEventHandler)
+
+	// Soft-delete an event
+	api.Delete("/events/:event_id", controller.DeleteEventHandler)
 }

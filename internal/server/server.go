@@ -33,7 +33,7 @@ func Run() {
 	}
 
 	// Table migration
-	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}); err != nil {
+	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}, &models.Analyst{}); err != nil {
 		log.Printf("Error migrating database: %v", err)
 	}
 
@@ -56,6 +56,8 @@ func Run() {
 	matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db)
 	chatController := controllers.NewChatController(chatService)
 	openAiController := controllers.NewOpenAiController(openAIService, matchPlayersService)
+	analystService := services.NewAnalystService(db)
+	analystController := controllers.NewAnalystController(analystService, authService, db)
 
 	// Configure Fiber app
 	app := fiber.New()
@@ -85,6 +87,7 @@ func Run() {
 	routes.SetupRoutesMatchePlayers(app, matchPlayersController)
 	routes.SetupChatRoutes(app, chatController)
 	routes.SetupOpenAiRoutes(app, openAiController)
+	routes.SetupRoutesAnalyst(app, analystController)
 
 	// Swagger route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
