@@ -269,3 +269,35 @@ func (s *MatchService) UpdateMatchStatuses() error {
 	}
 	return nil
 }
+
+func (s *MatchService) AssignReferee(matchID, organizerID, refereeID string) error {
+	// Vérifier si l'utilisateur est l'organisateur du match
+	var match models.Matches
+	if err := s.DB.Where("id = ? AND organizer_id = ?", matchID, organizerID).First(&match).Error; err != nil {
+		return errors.New("unauthorized or match not found")
+	}
+
+	// Vérifier si l'utilisateur est un participant du match
+	var count int64
+	if err := s.DB.Model(&models.MatchPlayers{}).Where("match_id = ? AND player_id = ?", matchID, refereeID).Count(&count).Error; err != nil {
+		return err
+	}
+	if count == 0 {
+		return errors.New("user is not a participant in the match")
+	}
+
+	// Mettre à jour le referee_id du match
+	if err := s.DB.Model(&models.Matches{}).Where("id = ?", matchID).Update("referee_id", refereeID).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *MatchService) LeaveMatch(matchID, userID string) error {
+	// Supprimer l'utilisateur de la liste des joueurs du match
+	if err := s.DB.Where("match_id = ? AND player_id = ?", matchID, userID).Delete(&models.MatchPlayers{}).Error; err != nil {
+		return err
+	}
+	return nil
+}

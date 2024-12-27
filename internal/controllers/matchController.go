@@ -545,3 +545,37 @@ func (ctrl *MatchController) MatchStatusWebSocketHandler(c *websocket.Conn) {
 		}
 	}
 }
+
+func (ctrl *MatchController) AssignRefereeHandler(c *fiber.Ctx) error {
+	var req struct {
+		MatchID   string `json:"match_id" binding:"required"`
+		RefereeID string `json:"referee_id" binding:"required"`
+	}
+
+	// Parse le corps de la requête
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	// Récupérer l'ID de l'utilisateur connecté via le middleware JWT
+	organizerID := c.Locals("user_id").(string)
+
+	// Assigner le rôle de referee
+	if err := ctrl.MatchService.AssignReferee(req.MatchID, organizerID, req.RefereeID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Referee assigned successfully"})
+}
+
+func (ctrl *MatchController) LeaveMatchHandler(c *fiber.Ctx) error {
+	matchID := c.Params("id")
+	userID := c.Locals("user_id").(string)
+
+	if err := ctrl.MatchService.LeaveMatch(matchID, userID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Successfully left the match"})
+}
+
