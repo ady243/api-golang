@@ -19,7 +19,6 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Post("/login", controller.LoginHandler)
 	api.Post("/refresh", controller.RefreshHandler)
 	api.Get("/auth/google", controller.GoogleLogin)
-	api.Get("/users", controller.GetUsersHandler)
 	api.Get("/auth/google/callback", controller.GoogleCallback)
 	api.Get("/confirm_email", controller.ConfirmEmailHandler)
 	api.Put("/userUpdate", middlewares.JWTMiddleware, controller.UserUpdate)
@@ -27,6 +26,7 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 
 	api.Use(middlewares.JWTMiddleware)
 	api.Get("/userInfo", controller.UserHandler)
+	api.Get("/users", controller.GetUsersHandler)
 	api.Delete("/deleteMyAccount", controller.DeleteUserHandler)
 	api.Get("/users/:id/public", controller.GetPublicUserInfoHandler)
 	api.Post("/assignRole/:organizerID/:playerID", controller.AssignRefereeRole)
