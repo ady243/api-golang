@@ -69,17 +69,17 @@ const emailTemplate = `
         p{
             font-size: 18px;
         }
-
+        
         .button-text {
             font-weight: bold;
             font-size: 18px;
         }
-
+        
         h1 {
             text-decoration: none;
             font-size: 20px;
         }
-
+        
         h2 {
             text-decoration: none;
         }
@@ -106,6 +106,17 @@ type EmailData struct {
 	Token   string
 }
 
+// SendConfirmationEmail envoie un email de confirmation à un utilisateur avec un lien de confirmation
+//
+// Il enverra un email à l'adresse email donnée avec un lien pour confirmer leur compte.
+// Le lien contiendra un jeton qui peut être utilisé pour confirmer le compte.
+//
+// Paramètres:
+// - toEmail: l'adresse email de l'utilisateur à qui envoyer l'email de confirmation
+// - token: le jeton de confirmation à inclure dans le lien
+//
+// Retourne:
+// - error: une erreur si l'email n'a pas pu être envoyé, nil sinon
 func (e *EmailService) SendConfirmationEmail(toEmail, token string) error {
 	from := os.Getenv("EMAIL_USER")
 	password := os.Getenv("EMAIL_PASSWORD")

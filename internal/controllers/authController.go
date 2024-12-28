@@ -220,6 +220,8 @@ func (ctrl *AuthController) GoogleLogin(c *fiber.Ctx) error {
 }
 
 // GoogleCallback gère le callback de Google après l'authentification
+// GoogleCallback gère le callback de Google après l'authentification
+// GoogleCallback gère le callback de Google après l'authentification
 func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
 	var req struct {
 		IDToken string `json:"idToken"`
@@ -227,6 +229,10 @@ func (ctrl *AuthController) GoogleCallback(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	if req.IDToken == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Missing token"})
 	}
 
 	token, err := ctrl.AuthService.GoogleOauthConfig.TokenSource(context.Background(), &oauth2.Token{

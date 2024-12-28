@@ -103,3 +103,16 @@ func SetupRoutesWebSocket(app *fiber.App, controller *controllers.WebSocketContr
 	api := app.Group("/api")
 	api.Get("/matches/status/updatess", websocket.New(controller.WebSocketHandler))
 }
+
+// SetupRoutesFriend sets up the routes for managing friend requests.
+// It will create an "api" group and add the following routes:
+//   - POST /api/friend/send: Sends a friend request.
+//   - POST /api/friend/accept: Accepts a friend request.
+func SetupRoutesFriend(app *fiber.App, controller *controllers.FriendController) {
+	api := app.Group("/api")
+	api.Use(middlewares.JWTMiddleware)
+	api.Post("/friend/send", controller.SendFriendRequest)
+	api.Post("/friend/accept", controller.AcceptFriendRequest)
+	api.Get("/friend/:userID", controller.GetFriends)
+	app.Get("/friend/search", controller.SearchUsersByUsername)
+}

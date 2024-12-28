@@ -33,7 +33,7 @@ func Run() {
 	}
 
 	// Table migration
-	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}); err != nil {
+	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}, &models.Friendship{}, &models.FriendRequest{}); err != nil {
 		log.Printf("Error migrating database: %v", err)
 	}
 
@@ -47,7 +47,10 @@ func Run() {
 	emailService := services.NewEmailService()
 	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
 	authService := services.NewAuthService(db, imageService, emailService)
+	friendService := services.NewFriendService(db, redisClient, authService, nil)
+	notificationService := services.NewNotificationService()
 	authController := controllers.NewAuthController(authService, imageService, matchService)
+	friendController := controllers.NewFriendController(friendService, notificationService)
 	matchService = services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
 	openAIService := services.NewOpenAIService()
 	chatService := services.NewChatService(db, redisClient)
@@ -88,6 +91,7 @@ func Run() {
 	routes.SetupChatRoutes(app, chatController)
 	routes.SetupOpenAiRoutes(app, openAiController)
 	routes.SetupRoutesWebSocket(app, webSocketController)
+	routes.SetupRoutesFriend(app, friendController)
 
 	// Swagger route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
