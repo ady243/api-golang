@@ -60,3 +60,4 @@ go.mod
 
 #Ingnore render 
 
+.env
