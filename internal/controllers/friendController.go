@@ -67,13 +67,14 @@ func (c *FriendController) GetFriends(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(friends)
 }
 
-func (c *FriendController) SearchUsersByUsername(ctx *fiber.Ctx) error {
-	username := ctx.Query("username")
-
-	users, err := c.friendService.SearchUsersByUsername(username)
+func (fc *FriendController) SearchUsersByUsername(c *fiber.Ctx) error {
+	username := c.Query("username")
+	users, err := fc.friendService.SearchUsersByUsername(username)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(users)
+	return c.JSON(users)
 }
