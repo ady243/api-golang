@@ -30,11 +30,11 @@ func NewFriendService(db *gorm.DB, redisClient *redis.Client, authService *AuthS
 }
 
 // SendFriendRequest sends a friend request from the sender to the receiver
-func (s *FriendService) SendFriendRequest(senderID, receiverID string) error {
+func (s *FriendService) SendFriendRequest(senderId, receiverId string) error {
 	ctx := context.Background()
 
 	// Construct Redis key to check if the request already exists
-	requestID := fmt.Sprintf("friend_request:%s:%s", senderID, receiverID)
+	requestID := fmt.Sprintf("friend_request:%s:%s", senderId, receiverId)
 
 	// Check if the friend request already exists in Redis
 	exists, err := s.RedisClient.Exists(ctx, requestID).Result()
@@ -47,9 +47,8 @@ func (s *FriendService) SendFriendRequest(senderID, receiverID string) error {
 
 	// Create the friend request data
 	friendRequest := models.FriendRequest{
-		SenderID:   senderID,
-		ReceiverID: receiverID,
-		Status:     "pending",
+		SenderId:   senderId,
+		ReceiverId: receiverId,
 		CreatedAt:  time.Now(),
 	}
 
@@ -69,8 +68,8 @@ func (s *FriendService) SendFriendRequest(senderID, receiverID string) error {
 	if s.WebSocket != nil {
 		notification := map[string]string{
 			"type":       "friend_request",
-			"senderId":   senderID,
-			"receiverId": receiverID,
+			"senderId":   senderId,
+			"receiverId": receiverId,
 		}
 
 		// Serialize the notification
@@ -92,11 +91,11 @@ func (s *FriendService) SendFriendRequest(senderID, receiverID string) error {
 }
 
 // AcceptFriendRequest accepts a pending friend request
-func (s *FriendService) AcceptFriendRequest(senderID, receiverID string) error {
+func (s *FriendService) AcceptFriendRequest(senderId, receiverId string) error {
 	ctx := context.Background()
 
 	// Construct Redis key to get the friend request
-	requestID := fmt.Sprintf("friend_request:%s:%s", senderID, receiverID)
+	requestID := fmt.Sprintf("friend_request:%s:%s", senderId, receiverId)
 
 	// Get the friend request data from Redis
 	data, err := s.RedisClient.Get(ctx, requestID).Result()
@@ -111,27 +110,14 @@ func (s *FriendService) AcceptFriendRequest(senderID, receiverID string) error {
 		return fmt.Errorf("failed to unmarshal friend request: %w", err)
 	}
 
-	// Update the status to accepted
-	friendRequest.Status = "accepted"
-	updatedData, err := json.Marshal(friendRequest)
-	if err != nil {
-		return fmt.Errorf("failed to marshal updated friend request: %w", err)
-	}
-
-	// Store the updated friend request in Redis
-	err = s.RedisClient.Set(ctx, requestID, updatedData, 30*24*time.Hour).Err()
-	if err != nil {
-		return fmt.Errorf("failed to store updated friend request in Redis: %w", err)
-	}
-
 	// Create friendship entries in the database
 	friendship1 := models.Friendship{
-		UserID:   senderID,
-		FriendID: receiverID,
+		UserID:   senderId,
+		FriendID: receiverId,
 	}
 	friendship2 := models.Friendship{
-		UserID:   receiverID,
-		FriendID: senderID,
+		UserID:   receiverId,
+		FriendID: senderId,
 	}
 
 	// Insert friendships into the database
@@ -146,8 +132,8 @@ func (s *FriendService) AcceptFriendRequest(senderID, receiverID string) error {
 	if s.WebSocket != nil {
 		notification := map[string]string{
 			"type":       "friend_request_accepted",
-			"senderId":   senderID,
-			"receiverId": receiverID,
+			"senderId":   senderId,
+			"receiverId": receiverId,
 		}
 
 		// Serialize the notification
@@ -195,7 +181,7 @@ func (s *FriendService) SearchUsersByUsername(username string) ([]models.Users, 
 // GetFriendRequests retrieves the pending friend requests for a user
 func (s *FriendService) GetFriendRequests(userID string) ([]models.FriendRequest, error) {
 	var friendRequests []models.FriendRequest
-	err := s.DB.Where("receiver_id = ? AND status = ?", userID, "pending").
+	err := s.DB.Where("receiver_id = ?", userID).
 		Find(&friendRequests).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get friend requests from database: %w", err)

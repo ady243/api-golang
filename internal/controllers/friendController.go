@@ -86,21 +86,6 @@ func (c *FriendController) AcceptFriendRequest(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Friend request accepted"})
 }
 
-func (c *FriendController) GetFriends(ctx *fiber.Ctx) error {
-	if c.friendService == nil {
-		log.Println("friendService is nil")
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
-	}
-
-	userID := ctx.Params("userID")
-	friends, err := c.friendService.GetFriends(userID)
-	if err != nil {
-		log.Printf("Failed to get friends for user %s: %v", userID, err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	return ctx.Status(fiber.StatusOK).JSON(friends)
-}
-
 func (c *FriendController) GetFriendRequests(ctx *fiber.Ctx) error {
 	if c.friendService == nil {
 		log.Println("friendService is nil")
@@ -114,6 +99,21 @@ func (c *FriendController) GetFriendRequests(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	return ctx.Status(fiber.StatusOK).JSON(requests)
+}
+
+func (c *FriendController) GetFriends(ctx *fiber.Ctx) error {
+	if c.friendService == nil {
+		log.Println("friendService is nil")
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
+	}
+
+	userID := ctx.Params("userID")
+	friends, err := c.friendService.GetFriends(userID)
+	if err != nil {
+		log.Printf("Failed to get friends for user %s: %v", userID, err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(friends)
 }
 
 func (c *FriendController) SearchUsersByUsername(ctx *fiber.Ctx) error {

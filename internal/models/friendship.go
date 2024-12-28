@@ -1,18 +1,7 @@
 package models
 
-import "time"
-
 type Friendship struct {
-	ID        uint      `gorm:"primaryKey"`
-	UserID    string    `gorm:"not null"`
-	FriendID  string    `gorm:"not null"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-}
-
-type FriendRequest struct {
-	ID         uint      `gorm:"primaryKey"`
-	SenderID   string    `gorm:"not null"`
-	ReceiverID string    `gorm:"not null"`
-	Status     string    `gorm:"not null;default:'pending'"`
-	CreatedAt  time.Time `gorm:"autoCreateTime"`
+    ID        string `json:"id" gorm:"primaryKey;type:varchar(26)"`
+    UserID    string `json:"user_id" gorm:"type:varchar(26)"`
+    FriendID  string `json:"friend_id" gorm:"type:varchar(26)"`
 }
