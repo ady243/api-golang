@@ -6,101 +6,74 @@ import (
 )
 
 type FriendController struct {
-	FriendService       *services.FriendService
-	NotificationService *services.NotificationService
+	friendService       *services.FriendService
+	notificationService *services.NotificationService
 }
 
 func NewFriendController(friendService *services.FriendService, notificationService *services.NotificationService) *FriendController {
-	return &FriendController{
-		FriendService:       friendService,
-		NotificationService: notificationService,
-	}
+	return &FriendController{friendService: friendService, notificationService: notificationService}
 }
 
-func (fc *FriendController) SendFriendRequest(c *fiber.Ctx) error {
-	type request struct {
-		SenderID   string `json:"senderId"`
-		ReceiverID string `json:"receiverId"`
+func (c *FriendController) SendFriendRequest(ctx *fiber.Ctx) error {
+	var request struct {
+		SenderId   string `json:"senderId"`
+		ReceiverId string `json:"receiverId"`
+	}
+	if err := ctx.BodyParser(&request); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}
 
-	var req request
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "cannot parse JSON",
-		})
+	if err := c.friendService.SendFriendRequest(request.SenderId, request.ReceiverId); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := fc.FriendService.SendFriendRequest(req.SenderID, req.ReceiverID); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+	// Send notification
+	if err := c.notificationService.SendNotification(request.ReceiverId, "New Friend Request", "You have a new friend request!"); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	title := "Nouvelle demande d'ami"
-	message := "Vous avez reçu une nouvelle demande d'ami"
-	if err := fc.NotificationService.SendNotification(req.ReceiverID, title, message); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "friend request sent",
-	})
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Friend request sent"})
 }
 
-func (fc *FriendController) AcceptFriendRequest(c *fiber.Ctx) error {
-	type request struct {
-		SenderID   string `json:"senderId"`
-		ReceiverID string `json:"receiverId"`
+func (c *FriendController) AcceptFriendRequest(ctx *fiber.Ctx) error {
+	var request struct {
+		SenderId   string `json:"senderId"`
+		ReceiverId string `json:"receiverId"`
+	}
+	if err := ctx.BodyParser(&request); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}
 
-	var req request
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "cannot parse JSON",
-		})
+	if err := c.friendService.AcceptFriendRequest(request.SenderId, request.ReceiverId); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	if err := fc.FriendService.AcceptFriendRequest(req.SenderID, req.ReceiverID); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+	// Send notification
+	if err := c.notificationService.SendNotification(request.SenderId, "Friend Request Accepted", "Your friend request has been accepted!"); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	title := "Demande d'ami acceptée"
-	message := "Votre demande d'ami a été acceptée"
-	if err := fc.NotificationService.SendNotification(req.SenderID, title, message); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "friend request accepted",
-	})
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Friend request accepted"})
 }
 
-func (fc *FriendController) GetFriends(c *fiber.Ctx) error {
-	userID := c.Params("userID")
-	friends, err := fc.FriendService.GetFriends(userID)
+func (c *FriendController) GetFriends(ctx *fiber.Ctx) error {
+	userId := ctx.Params("userId")
+
+	friends, err := c.friendService.GetFriends(userId)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.JSON(friends)
+	return ctx.Status(fiber.StatusOK).JSON(friends)
 }
 
-func (fc *FriendController) SearchUsersByUsername(c *fiber.Ctx) error {
-	username := c.Query("username")
-	users, err := fc.FriendService.SearchUsersByUsername(username)
+func (c *FriendController) SearchUsersByUsername(ctx *fiber.Ctx) error {
+	username := ctx.Query("username")
+
+	users, err := c.friendService.SearchUsersByUsername(username)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.JSON(users)
+	return ctx.Status(fiber.StatusOK).JSON(users)
 }

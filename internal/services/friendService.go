@@ -130,8 +130,10 @@ func (s *FriendService) GetFriends(userID string) ([]models.Users, error) {
 
 func (s *FriendService) SearchUsersByUsername(username string) ([]models.Users, error) {
 	var users []models.Users
-	if err := s.DB.Where("username LIKE ?", "%"+username+"%").Find(&users).Error; err != nil {
+	query := "%" + username + "%"
+	if err := s.DB.Where("username LIKE ?", query).Find(&users).Error; err != nil {
 		return nil, err
 	}
+	fmt.Printf("Search query: %s, Results: %v\n", query, users)
 	return users, nil
 }
