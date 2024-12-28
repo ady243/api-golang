@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+
 	"github.com/ady243/teamup/internal/services"
 	"github.com/gofiber/fiber/v2"
 )
@@ -69,6 +71,7 @@ func (c *FriendController) GetFriends(ctx *fiber.Ctx) error {
 
 func (fc *FriendController) SearchUsersByUsername(c *fiber.Ctx) error {
 	username := c.Query("username")
+	fmt.Printf("Received search request for username: %s\n", username)
 	users, err := fc.friendService.SearchUsersByUsername(username)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -76,5 +79,6 @@ func (fc *FriendController) SearchUsersByUsername(c *fiber.Ctx) error {
 		})
 	}
 
+	fmt.Printf("Search results: %v\n", users)
 	return c.JSON(users)
 }

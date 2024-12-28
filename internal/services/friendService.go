@@ -134,6 +134,6 @@ func (s *FriendService) SearchUsersByUsername(username string) ([]models.Users, 
 	if err := s.DB.Where("username LIKE ?", query).Find(&users).Error; err != nil {
 		return nil, err
 	}
-	fmt.Printf("Search query: %s, Results: %v\n", query, users)
+	fmt.Printf("Search query: %s, Results: %v\n", query, users) 
 	return users, nil
 }
