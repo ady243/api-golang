@@ -17,6 +17,15 @@ func NewFriendController(friendService *services.FriendService, notificationServ
 }
 
 func (c *FriendController) SendFriendRequest(ctx *fiber.Ctx) error {
+	if c.friendService == nil {
+		log.Println("friendService is nil")
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
+	}
+	if c.notificationService == nil {
+		log.Println("notificationService is nil")
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
+	}
+
 	var request struct {
 		SenderId   string `json:"senderId"`
 		ReceiverId string `json:"receiverId"`
@@ -43,6 +52,15 @@ func (c *FriendController) SendFriendRequest(ctx *fiber.Ctx) error {
 }
 
 func (c *FriendController) AcceptFriendRequest(ctx *fiber.Ctx) error {
+	if c.friendService == nil {
+		log.Println("friendService is nil")
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
+	}
+	if c.notificationService == nil {
+		log.Println("notificationService is nil")
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
+	}
+
 	var request struct {
 		SenderId   string `json:"senderId"`
 		ReceiverId string `json:"receiverId"`
@@ -69,6 +87,11 @@ func (c *FriendController) AcceptFriendRequest(ctx *fiber.Ctx) error {
 }
 
 func (c *FriendController) GetFriends(ctx *fiber.Ctx) error {
+	if c.friendService == nil {
+		log.Println("friendService is nil")
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
+	}
+
 	userID := ctx.Params("userID")
 	friends, err := c.friendService.GetFriends(userID)
 	if err != nil {
@@ -79,6 +102,11 @@ func (c *FriendController) GetFriends(ctx *fiber.Ctx) error {
 }
 
 func (c *FriendController) GetFriendRequests(ctx *fiber.Ctx) error {
+	if c.friendService == nil {
+		log.Println("friendService is nil")
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
+	}
+
 	userID := ctx.Params("userID")
 	requests, err := c.friendService.GetFriendRequests(userID)
 	if err != nil {
@@ -89,6 +117,11 @@ func (c *FriendController) GetFriendRequests(ctx *fiber.Ctx) error {
 }
 
 func (c *FriendController) SearchUsersByUsername(ctx *fiber.Ctx) error {
+	if c.friendService == nil {
+		log.Println("friendService is nil")
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
+	}
+
 	username := ctx.Query("username")
 	users, err := c.friendService.SearchUsersByUsername(username)
 	if err != nil {
