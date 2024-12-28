@@ -31,6 +31,16 @@ func NewFriendService(db *gorm.DB, redisClient *redis.Client, authService *AuthS
 func (s *FriendService) SendFriendRequest(senderID, receiverID string) error {
 	ctx := context.Background()
 	requestID := fmt.Sprintf("friend_request:%s:%s", senderID, receiverID)
+
+	// Vérifiez si une demande existe déjà
+	exists, err := s.RedisClient.Exists(ctx, requestID).Result()
+	if err != nil {
+		return err
+	}
+	if exists > 0 {
+		return fmt.Errorf("friend request already exists")
+	}
+
 	friendRequest := models.FriendRequest{
 		SenderID:   senderID,
 		ReceiverID: receiverID,

@@ -17,39 +17,39 @@ func NewFriendController(friendService *services.FriendService, notificationServ
 }
 
 func (c *FriendController) SendFriendRequest(ctx *fiber.Ctx) error {
-	if c.friendService == nil {
-		log.Println("friendService is nil")
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
-	}
-	if c.notificationService == nil {
-		log.Println("notificationService is nil")
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
-	}
+    if c.friendService == nil {
+        log.Println("friendService is nil")
+        return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
+    }
+    if c.notificationService == nil {
+        log.Println("notificationService is nil")
+        return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal server error"})
+    }
 
-	var request struct {
-		SenderId   string `json:"senderId"`
-		ReceiverId string `json:"receiverId"`
-	}
-	if err := ctx.BodyParser(&request); err != nil {
-		log.Printf("Failed to parse request body: %v", err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
-	}
+    var request struct {
+        SenderId   string `json:"senderId"`
+        ReceiverId string `json:"receiverId"`
+    }
+    if err := ctx.BodyParser(&request); err != nil {
+        log.Printf("Failed to parse request body: %v", err)
+        return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+    }
 
-	log.Printf("Sending friend request from %s to %s", request.SenderId, request.ReceiverId)
-	if err := c.friendService.SendFriendRequest(request.SenderId, request.ReceiverId); err != nil {
-		log.Printf("Failed to send friend request: %v", err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
+    log.Printf("Sending friend request from %s to %s", request.SenderId, request.ReceiverId)
+    if err := c.friendService.SendFriendRequest(request.SenderId, request.ReceiverId); err != nil {
+        log.Printf("Failed to send friend request: %v", err)
+        return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	// Send notification
-	if err := c.notificationService.SendNotification(request.ReceiverId, "New Friend Request", "You have a new friend request!"); err != nil {
-		log.Printf("Failed to send notification: %v", err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
+    if err := c.notificationService.SendNotification(request.ReceiverId, "New Friend Request", "You have a new friend request!"); err != nil {
+        log.Printf("Failed to send notification: %v", err)
+        return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	log.Printf("Friend request sent successfully from %s to %s", request.SenderId, request.ReceiverId)
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Friend request sent"})
+    log.Printf("Friend request sent successfully from %s to %s", request.SenderId, request.ReceiverId)
+    return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Friend request sent"})
 }
+
 
 func (c *FriendController) AcceptFriendRequest(ctx *fiber.Ctx) error {
 	if c.friendService == nil {
