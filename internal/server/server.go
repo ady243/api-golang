@@ -16,9 +16,13 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
 	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
+
+var clients = make(map[*websocket.Conn]bool)
+var broadcast = make(chan services.Notification)
 
 func Run() {
 	// Load environment variables
@@ -48,7 +52,7 @@ func Run() {
 	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
 	authService := services.NewAuthService(db, imageService, emailService)
 	friendService := services.NewFriendService(db, redisClient, authService, nil)
-	notificationService := services.NewNotificationService()
+	notificationService := services.NewNotificationService(redisClient, broadcast)
 	authController := controllers.NewAuthController(authService, imageService, matchService)
 	friendController := controllers.NewFriendController(friendService, notificationService)
 	matchService = services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
@@ -96,6 +100,26 @@ func Run() {
 	// Swagger route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
+	// WebSocket endpoint
+	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
+		clients[c] = true
+		defer func() {
+			delete(clients, c)
+			c.Close()
+		}()
+
+		for {
+			var msg services.Notification
+			if err := c.ReadJSON(&msg); err != nil {
+				log.Printf("error: %v", err)
+				break
+			}
+			broadcast <- msg
+		}
+	}))
+
+	go handleMessages()
+
 	// Start server
 	port := os.Getenv("API_PORT")
 	if port == "" {
@@ -104,7 +128,6 @@ func Run() {
 	log.Printf("Server started on port %s", port)
 	go webSocketService.StartBroadcast()
 
-	// Planifier la mise à jour des statuts des matchs toutes les minutes
 	go func() {
 		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()
@@ -118,4 +141,16 @@ func Run() {
 	log.Fatal(app.Listen(":" + port))
 }
 
-
+func handleMessages() {
+	for {
+		msg := <-broadcast
+		for client := range clients {
+			err := client.WriteJSON(msg)
+			if err != nil {
+				log.Printf("websocket error: %v", err)
+				client.Close()
+				delete(clients, client)
+			}
+		}
+	}
+}
