@@ -114,5 +114,6 @@ func SetupRoutesFriend(app *fiber.App, controller *controllers.FriendController)
 	api.Post("/friend/send", controller.SendFriendRequest)
 	api.Post("/friend/accept", controller.AcceptFriendRequest)
 	api.Get("/friend/:userID", controller.GetFriends)
-	app.Get("/friend/search", controller.SearchUsersByUsername)
+	api.Get("/friend/requests/:userID", controller.GetFriendRequests)
+	api.Get("/friend/search", controller.SearchUsersByUsername)
 }
