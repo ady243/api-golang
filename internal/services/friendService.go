@@ -134,6 +134,14 @@ func (s *FriendService) SearchUsersByUsername(username string) ([]models.Users, 
 	if err := s.DB.Where("username LIKE ?", query).Find(&users).Error; err != nil {
 		return nil, err
 	}
-	fmt.Printf("Search query: %s, Results: %v\n", query, users) 
+	fmt.Printf("Search query: %s, Results: %v\n", query, users)
 	return users, nil
+}
+
+func (s *FriendService) GetFriendRequests(userID string) ([]models.FriendRequest, error) {
+	var friendRequests []models.FriendRequest
+	if err := s.DB.Where("receiver_id = ? AND status = ?", userID, "pending").Find(&friendRequests).Error; err != nil {
+		return nil, err
+	}
+	return friendRequests, nil
 }

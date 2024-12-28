@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"fmt"
-
 	"github.com/ady243/teamup/internal/services"
 	"github.com/gofiber/fiber/v2"
 )
@@ -69,16 +67,24 @@ func (c *FriendController) GetFriends(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(friends)
 }
 
-func (fc *FriendController) SearchUsersByUsername(c *fiber.Ctx) error {
-	username := c.Query("username")
-	fmt.Printf("Received search request for username: %s\n", username)
-	users, err := fc.friendService.SearchUsersByUsername(username)
+func (c *FriendController) GetFriendRequests(ctx *fiber.Ctx) error {
+	userId := ctx.Params("userId")
+
+	requests, err := c.friendService.GetFriendRequests(userId)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	fmt.Printf("Search results: %v\n", users)
-	return c.JSON(users)
+	return ctx.Status(fiber.StatusOK).JSON(requests)
+}
+
+func (c *FriendController) SearchUsersByUsername(ctx *fiber.Ctx) error {
+	username := ctx.Query("username")
+
+	users, err := c.friendService.SearchUsersByUsername(username)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(users)
 }
