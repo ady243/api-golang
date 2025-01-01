@@ -46,7 +46,7 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
 	api.Post("/:id/join", controller.AddPlayerToMatchHandler)
 	api.Get("/:id/chat", websocket.New(controller.ChatWebSocketHandler))
 	api.Get("/organizer/matches", controller.GetMatchByOrganizerIDHandler)
-	api.Get("/referee/matches", controller.GetMatchByRefereeIDHandler)
+	api.Get("/analyst/matches", controller.GetMatchByRefereeIDHandler)
 	api.Put("/assignAsAnalyst/:match_id/:referee_id", controller.PutRefereeIDHandler)
 }
 
