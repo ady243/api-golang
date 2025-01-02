@@ -465,7 +465,6 @@ func (ctrl *AuthController) UpdateUserStatistics(c *fiber.Ctx) error {
 }
 
 // DeleteUserHandler gère la demande de suppression d'un utilisateur
-
 // @Summary Supprimer un utilisateur
 // @Description Supprimer un utilisateur
 // @Tags Auth
@@ -475,7 +474,6 @@ func (ctrl *AuthController) UpdateUserStatistics(c *fiber.Ctx) error {
 // @Failure 401 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /api/deleteMyAccount [delete]
-
 func (ctrl *AuthController) DeleteUserHandler(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(string)
 	if !ok {
