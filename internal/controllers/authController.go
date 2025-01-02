@@ -374,40 +374,6 @@ func (ctrl *AuthController) ConfirmEmailHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Email confirmé avec succès"})
 }
 
-// DeleteUserHandler gère la demande de suppression d'un utilisateur
-
-// @Summary Supprimer un utilisateur
-// @Description Supprimer un utilisateur
-// @Tags Auth
-// @Security BearerAuth
-// @Produce json
-// @Success 200 {object} map[string]interface{}
-// @Failure 401 {object} map[string]interface{}
-// @Failure 500 {object} map[string]interface{}
-// @Router /api/deleteMyAccount [delete]
-func (ctrl *AuthController) DeleteUserHandler(c *fiber.Ctx) error {
-	userID, ok := c.Locals("user_id").(string)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID"})
-	}
-	matchId, ok := c.Locals("match_id").(string)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid match ID"})
-	}
-
-	err := ctrl.AuthService.DeleteUser(userID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	err = ctrl.MatchService.DeleteMatch(userID, matchId)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Utilisateur supprimé avec succès"})
-}
-
 // GetUsersHandler gère la demande de récupération de tous les utilisateurs
 // @Summary Récupérer tous les utilisateurs
 // @Description Récupérer tous les utilisateurs
@@ -496,4 +462,30 @@ func (ctrl *AuthController) UpdateUserStatistics(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User statistics updated successfully"})
+}
+
+// DeleteUserHandler gère la demande de suppression d'un utilisateur
+
+// @Summary Supprimer un utilisateur
+// @Description Supprimer un utilisateur
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/deleteMyAccount [delete]
+
+func (ctrl *AuthController) DeleteUserHandler(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID"})
+	}
+
+	err := ctrl.AuthService.DeleteUserAndRelatedData(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Utilisateur supprimé avec succès"})
 }

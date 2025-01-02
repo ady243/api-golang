@@ -91,7 +91,7 @@ const emailTemplate = `
         <h3>Bienvenue sur TeamUp 💫😁️!</h3>
         <p>Pour continuer l'aventure avec TeamUp⚽️, veuillez confirmer votre compte en cliquant sur le bouton ci-dessous ⌛.</p>
         <div class="button-container">
-           <a href="https://api-teamup.onrender.com/api/confirm_email?token={{.Token}}" class="button">
+           <a href="http://localhost:3003/api/confirm_email?token={{.Token}}" class="button">
                 <span class="button-text">Confirmer mon compte</span>
             </a>
         </div>

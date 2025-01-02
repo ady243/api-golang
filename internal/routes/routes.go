@@ -108,12 +108,20 @@ func SetupRoutesWebSocket(app *fiber.App, controller *controllers.WebSocketContr
 // It will create an "api" group and add the following routes:
 //   - POST /api/friend/send: Sends a friend request.
 //   - POST /api/friend/accept: Accepts a friend request.
-func SetupRoutesFriend(app *fiber.App, controller *controllers.FriendController) {
+func SetupFriendRoutes(app *fiber.App, friendController *controllers.FriendController) {
 	api := app.Group("/api")
 	api.Use(middlewares.JWTMiddleware)
-	api.Post("/friend/send", controller.SendFriendRequest)
-	api.Post("/friend/accept", controller.AcceptFriendRequest)
-	api.Get("/friend/:userID", controller.GetFriends)
-	api.Get("/friend/requests/:userID", controller.GetFriendRequests)
-	api.Get("/friend/search", controller.SearchUsersByUsername)
+	api.Post("/friend/send", friendController.SendFriendRequest)
+	api.Post("/friend/accept", friendController.AcceptFriendRequest)
+	api.Post("/friend/decline", friendController.DeclineFriendRequest)
+	api.Get("/friend/requests/:userID", friendController.GetFriendRequests)
+	api.Get("/friend/:userID", friendController.GetFriends)
+	api.Get("/friend/search", friendController.SearchUsersByUsername)
+}
+
+func SetupRoutesFriendMessage(app *fiber.App, friendChatController *controllers.FriendChatController) {
+	api := app.Group("/api")
+	api.Use(middlewares.JWTMiddleware)
+	api.Post("/message/send", friendChatController.SendMessage)
+	api.Get("/message/messages/:senderID/:receiverID", friendChatController.GetMessages)
 }

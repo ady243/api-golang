@@ -41,4 +41,6 @@ type Users struct {
 
 	SentFriendRequests     []FriendRequest `json:"sent_friend_requests" gorm:"foreignKey:SenderId"`
 	ReceivedFriendRequests []FriendRequest `json:"received_friend_requests" gorm:"foreignKey:ReceiverId"`
+
+	FCMToken string `json:"fcm_token"`
 }

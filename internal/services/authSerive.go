@@ -346,3 +346,23 @@ func (s *AuthService) UpdateUserStatistics(userID string, matchesPlayed, matches
 
 	return nil
 }
+
+
+func (s *AuthService) DeleteUserAndRelatedData(userID string) error {
+    // Supprimer les matchs où l'utilisateur est l'organisateur
+    if err := s.DB.Where("organizer_id = ?", userID).Delete(&models.Matches{}).Error; err != nil {
+        return err
+    }
+
+    // Supprimer les participations de l'utilisateur aux matchs
+    if err := s.DB.Where("player_id = ?", userID).Delete(&models.MatchPlayers{}).Error; err != nil {
+        return err
+    }
+
+    // Supprimer l'utilisateur
+    if err := s.DB.Where("id = ?", userID).Delete(&models.Users{}).Error; err != nil {
+        return err
+    }
+
+    return nil
+}

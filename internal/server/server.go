@@ -21,9 +21,6 @@ import (
 	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
 
-var clients = make(map[*websocket.Conn]bool)
-var broadcast = make(chan services.Notification)
-
 func Run() {
 	// Load environment variables
 	if err := godotenv.Load(".env"); err != nil {
@@ -37,7 +34,7 @@ func Run() {
 	}
 
 	// Table migration
-	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}, &models.Friendship{}, &models.FriendRequest{}); err != nil {
+	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}, &models.FriendRequest{}, &models.Message{}); err != nil {
 		log.Printf("Error migrating database: %v", err)
 	}
 
@@ -46,25 +43,29 @@ func Run() {
 		Addr: os.Getenv("REDIS_ADDR"),
 	})
 
+	// Create a broadcast channel for notifications
+	notificationBroadcast := make(chan services.Notification)
+
 	// Initialize services and controllers
 	imageService := services.NewImageService("./uploads")
 	emailService := services.NewEmailService()
 	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
 	authService := services.NewAuthService(db, imageService, emailService)
-	friendService := services.NewFriendService(db, redisClient, authService, nil)
-	notificationService := services.NewNotificationService(redisClient, broadcast)
-	authController := controllers.NewAuthController(authService, imageService, matchService)
-	friendController := controllers.NewFriendController(friendService, notificationService)
-	matchService = services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
-	openAIService := services.NewOpenAIService()
-	chatService := services.NewChatService(db, redisClient)
 	webSocketService := services.NewWebSocketService()
+	notificationService := services.NewNotificationService(db, redisClient, notificationBroadcast, webSocketService)
+	openAIService := services.NewOpenAIService()
+	friendChatService := services.NewFriendChatService(db, webSocketService)
+
+	friendService := services.NewFriendService(db, authService, webSocketService)
+	friendController := controllers.NewFriendController(friendService, notificationService)
+	chatService := services.NewChatService(db, redisClient)
 	matchController := controllers.NewMatchController(matchService, authService, db, chatService, redisClient)
 	matchPlayersService := services.NewMatchPlayersService(db)
 	matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db)
 	chatController := controllers.NewChatController(chatService)
 	openAiController := controllers.NewOpenAiController(openAIService, matchPlayersService)
-	webSocketController := controllers.NewWebSocketController(webSocketService)
+	authController := controllers.NewAuthController(authService, imageService, matchService)
+	friendChatController := controllers.NewfriendChatController(friendChatService, friendService)
 
 	// Configure Fiber app
 	app := fiber.New()
@@ -94,31 +95,22 @@ func Run() {
 	routes.SetupRoutesMatchePlayers(app, matchPlayersController)
 	routes.SetupChatRoutes(app, chatController)
 	routes.SetupOpenAiRoutes(app, openAiController)
-	routes.SetupRoutesWebSocket(app, webSocketController)
-	routes.SetupRoutesFriend(app, friendController)
+	routes.SetupFriendRoutes(app, friendController)
+	routes.SetupRoutesFriendMessage(app, friendChatController)
 
 	// Swagger route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
-	// WebSocket endpoint
+	// WebSocket route
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
-		clients[c] = true
-		defer func() {
-			delete(clients, c)
-			c.Close()
-		}()
-
-		for {
-			var msg services.Notification
-			if err := c.ReadJSON(&msg); err != nil {
-				log.Printf("error: %v", err)
-				break
-			}
-			broadcast <- msg
-		}
+		webSocketService.HandleWebSocket(c)
 	}))
 
-	go handleMessages()
+	// Start WebSocket broadcast
+	go webSocketService.StartBroadcast()
+
+	// Start listening for notifications
+	go notificationService.ListenForNotifications()
 
 	// Start server
 	port := os.Getenv("API_PORT")
@@ -126,7 +118,6 @@ func Run() {
 		port = "3003"
 	}
 	log.Printf("Server started on port %s", port)
-	go webSocketService.StartBroadcast()
 
 	go func() {
 		ticker := time.NewTicker(1 * time.Minute)
@@ -139,18 +130,4 @@ func Run() {
 	}()
 
 	log.Fatal(app.Listen(":" + port))
-}
-
-func handleMessages() {
-	for {
-		msg := <-broadcast
-		for client := range clients {
-			err := client.WriteJSON(msg)
-			if err != nil {
-				log.Printf("websocket error: %v", err)
-				client.Close()
-				delete(clients, client)
-			}
-		}
-	}
 }
