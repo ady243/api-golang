@@ -7,7 +7,7 @@ import (
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
-	"google.golang.org/api/option"
+	"github.com/ady243/teamup/internal"
 )
 
 type NotificationService struct {
@@ -16,20 +16,16 @@ type NotificationService struct {
 }
 
 func NewNotificationService() (*NotificationService, error) {
-	// Spécifie le chemin vers le fichier JSON téléchargé
-	opt := option.WithCredentialsFile("./json/teamup-6b3b6-firebase-adminsdk-1zv3d-7b3b6b7b7e.json")
 
-	// Initialise l'application Firebase
-	app, err := firebase.NewApp(context.Background(), nil, opt)
+	app, err := internal.InitializeFirebase()
 	if err != nil {
-		log.Fatalf("error initializing app: %v", err)
+		log.Fatalf("Erreur lors de l'initialisation de Firebase: %v", err)
 		return nil, err
 	}
 
-	// Crée un client pour envoyer des notifications push
 	client, err := app.Messaging(context.Background())
 	if err != nil {
-		log.Fatalf("error getting Messaging client: %v", err)
+		log.Fatalf("Erreur lors de la récupération du client de notifications: %v", err)
 		return nil, err
 	}
 
@@ -51,9 +47,9 @@ func (ns *NotificationService) SendPushNotification(token, title, body string) e
 	// Envoie de la notification
 	response, err := ns.client.Send(context.Background(), message)
 	if err != nil {
-		return fmt.Errorf("failed to send notification: %w", err)
+		return fmt.Errorf("échec de l'envoi de la notification: %w", err)
 	}
 
-	log.Printf("Successfully sent message: %s", response)
+	log.Printf("Notification envoyée avec succès: %s", response)
 	return nil
 }

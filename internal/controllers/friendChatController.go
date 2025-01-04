@@ -57,6 +57,7 @@ func (cc *FriendChatController) SendMessage(c *fiber.Ctx) error {
 		})
 	}
 
+	// Envoi du message
 	if err := cc.FriendChatService.SendMessage(request.SenderID, request.ReceiverID, request.Content); err != nil {
 		log.Printf("Error sending message: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
