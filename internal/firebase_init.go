@@ -1,5 +1,3 @@
-
-
 package internal
 
 import (
@@ -13,7 +11,7 @@ import (
 func InitializeFirebase() (*firebase.App, error) {
 	ctx := context.Background()
 
-	opt := option.WithCredentialsFile("./services/json/teamup-6b3b6-firebase-adminsdk-1zv3d-7b3b6b7b7e.json") 
+	opt := option.WithCredentialsFile("./fireJson/notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json")
 
 	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {
