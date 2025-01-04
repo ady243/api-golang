@@ -16,7 +16,6 @@ type NotificationService struct {
 }
 
 func NewNotificationService() (*NotificationService, error) {
-
 	app, err := internal.InitializeFirebase()
 	if err != nil {
 		log.Fatalf("Erreur lors de l'initialisation de Firebase: %v", err)
