@@ -45,7 +45,7 @@ func (s *FriendChatService) SendMessage(senderID, receiverID, content string) er
 	// Envoi de notification via Firebase
 	err := s.NotificationService.SendPushNotification(
 		"receiver_fcm_token",
-		"vous avez un nouveau message dans TeamUp",
+		"vous avez un nouveau message",
 		content,
 	)
 	if err != nil {
