@@ -31,7 +31,6 @@ func (fc *FriendController) SendFriendRequest(c *fiber.Ctx) error {
 		})
 	}
 
-	// Vérifiez que sender_id et receiver_id ne sont pas vides
 	if request.SenderId == "" || request.ReceiverId == "" {
 		log.Printf("SenderId or ReceiverId is empty")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -39,7 +38,6 @@ func (fc *FriendController) SendFriendRequest(c *fiber.Ctx) error {
 		})
 	}
 
-	// Vérifiez que sender_id et receiver_id ne sont pas identiques
 	if request.SenderId == request.ReceiverId {
 		log.Printf("SenderId and ReceiverId are the same")
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{

@@ -299,26 +299,27 @@ type LoginRequest struct {
 // @Failure 500 {object} map[string]interface{}
 // @Router /api/login [post]
 func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
-	var req struct {
-		Email    string `json:"email" binding:"required"`
-		Password string `json:"password" binding:"required"`
-	}
+    var req struct {
+        Email    string `json:"email" binding:"required"`
+        Password string `json:"password" binding:"required"`
+        FCMToken string `json:"fcm_token"`
+    }
 
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
+    if err := c.BodyParser(&req); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	accessToken, refreshToken, err := ctrl.AuthService.Login(req.Email, req.Password)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
-	}
+    accessToken, refreshToken, err := ctrl.AuthService.Login(req.Email, req.Password, req.FCMToken)
+    if err != nil {
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	err = ctrl.AuthService.UpdateRefreshToken(req.Email, refreshToken)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
+    err = ctrl.AuthService.UpdateRefreshToken(req.Email, refreshToken)
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": accessToken, "refreshToken": refreshToken})
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": accessToken, "refreshToken": refreshToken})
 }
 
 // RefreshHandler gère la demande de rafraîchissement du token d'un utilisateur
@@ -486,4 +487,24 @@ func (ctrl *AuthController) DeleteUserHandler(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Utilisateur supprimé avec succès"})
+}
+
+
+
+func (ctrl *AuthController) UpdateFCMTokenHandler(c *fiber.Ctx) error {
+    var req struct {
+        UserID   string `json:"user_id" binding:"required"`
+        FCMToken string `json:"fcm_token" binding:"required"`
+    }
+
+    if err := c.BodyParser(&req); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    err := ctrl.AuthService.UpdateFCMToken(req.UserID, req.FCMToken)
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+    }
+
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "FCM token updated successfully"})
 }

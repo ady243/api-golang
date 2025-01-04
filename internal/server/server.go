@@ -43,18 +43,15 @@ func Run() {
 		Addr: os.Getenv("REDIS_ADDR"),
 	})
 
-	// Create a broadcast channel for notifications
-	notificationBroadcast := make(chan services.Notification)
-
 	// Initialize services and controllers
 	imageService := services.NewImageService("./uploads")
 	emailService := services.NewEmailService()
 	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
 	authService := services.NewAuthService(db, imageService, emailService)
 	webSocketService := services.NewWebSocketService()
-	notificationService := services.NewNotificationService(db, redisClient, notificationBroadcast, webSocketService)
+	notificationService := services.NewNotificationService(db)
 	openAIService := services.NewOpenAIService()
-	friendChatService := services.NewFriendChatService(db, webSocketService)
+	friendChatService := services.NewFriendChatService(db, webSocketService, notificationService)
 
 	friendService := services.NewFriendService(db, authService, webSocketService)
 	friendController := controllers.NewFriendController(friendService, notificationService)
@@ -65,7 +62,7 @@ func Run() {
 	chatController := controllers.NewChatController(chatService)
 	openAiController := controllers.NewOpenAiController(openAIService, matchPlayersService)
 	authController := controllers.NewAuthController(authService, imageService, matchService)
-	friendChatController := controllers.NewfriendChatController(friendChatService, friendService)
+	friendChatController := controllers.NewFriendChatController(friendChatService, friendService)
 
 	// Configure Fiber app
 	app := fiber.New()
@@ -108,9 +105,6 @@ func Run() {
 
 	// Start WebSocket broadcast
 	go webSocketService.StartBroadcast()
-
-	// Start listening for notifications
-	go notificationService.ListenForNotifications()
 
 	// Start server
 	port := os.Getenv("API_PORT")

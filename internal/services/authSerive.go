@@ -86,35 +86,36 @@ func (s *AuthService) RegisterUser(userInfo models.Users) (models.Users, error) 
 }
 
 // Login authentifie un utilisateur et retourne un token JWT et un refreshToken
-func (s *AuthService) Login(email, password string) (string, string, error) {
-	var user models.Users
-	if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
-		return "", "", err
-	}
+func (s *AuthService) Login(email, password, fcmToken string) (string, string, error) {
+    var user models.Users
+    if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
+        return "", "", err
+    }
 
-	if !helpers.CheckPasswordHash(password, user.PasswordHash) {
-		return "", "", ErrInvalidCredentials
-	}
+    if !helpers.CheckPasswordHash(password, user.PasswordHash) {
+        return "", "", ErrInvalidCredentials
+    }
 
-	userID, err := ulid.Parse(user.ID)
-	if err != nil {
-		return "", "", err
-	}
-	accessToken, err := middlewares.GenerateToken(userID)
-	if err != nil {
-		return "", "", err
-	}
+    user.FCMToken = fcmToken
+    if err := s.DB.Save(&user).Error; err != nil {
+        return "", "", err
+    }
 
-	userID, err = ulid.Parse(user.ID)
-	if err != nil {
-		return "", "", err
-	}
-	refreshToken, err := middlewares.GenerateRefreshToken(userID)
-	if err != nil {
-		return "", "", err
-	}
+    userID, err := ulid.Parse(user.ID)
+    if err != nil {
+        return "", "", err
+    }
+    accessToken, err := middlewares.GenerateToken(userID)
+    if err != nil {
+        return "", "", err
+    }
 
-	return accessToken, refreshToken, nil
+    refreshToken, err := middlewares.GenerateRefreshToken(userID)
+    if err != nil {
+        return "", "", err
+    }
+
+    return accessToken, refreshToken, nil
 }
 
 func (s *AuthService) GetUserByID(id string) (models.Users, error) {
@@ -369,4 +370,19 @@ func (s *AuthService) DeleteUserAndRelatedData(userID string) error {
 	}
 
 	return nil
+}
+
+
+func (s *AuthService) UpdateFCMToken(userID, fcmToken string) error {
+    var user models.Users
+    if err := s.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+        return err
+    }
+
+    user.FCMToken = fcmToken
+    if err := s.DB.Save(&user).Error; err != nil {
+        return err
+    }
+
+    return nil
 }

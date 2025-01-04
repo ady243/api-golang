@@ -12,7 +12,7 @@ type FriendChatController struct {
 	FriendService     *services.FriendService
 }
 
-func NewfriendChatController(friendChatService *services.FriendChatService, friendService *services.FriendService) *FriendChatController {
+func NewFriendChatController(friendChatService *services.FriendChatService, friendService *services.FriendService) *FriendChatController {
 	return &FriendChatController{
 		FriendChatService: friendChatService,
 		FriendService:     friendService,
@@ -70,22 +70,22 @@ func (cc *FriendChatController) SendMessage(c *fiber.Ctx) error {
 }
 
 func (cc *FriendChatController) GetMessages(c *fiber.Ctx) error {
-    senderID := c.Params("senderID")
-    receiverID := c.Params("receiverID")
+	senderID := c.Params("senderID")
+	receiverID := c.Params("receiverID")
 
-    areFriends, err := cc.FriendService.AreFriends(senderID, receiverID)
-    if err != nil || !areFriends {
-        log.Printf("Users are not friends or error occurred: %v", err)
-        return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-            "error": "users are not friends",
-        })
-    }
+	areFriends, err := cc.FriendService.AreFriends(senderID, receiverID)
+	if err != nil || !areFriends {
+		log.Printf("Users are not friends or error occurred: %v", err)
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "users are not friends",
+		})
+	}
 
-    messages, err := cc.FriendChatService.GetMessages(senderID, receiverID)
-    if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "error": err.Error(),
-        })
-    }
-    return c.JSON(messages)
+	messages, err := cc.FriendChatService.GetMessages(senderID, receiverID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	return c.JSON(messages)
 }
