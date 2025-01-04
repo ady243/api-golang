@@ -43,18 +43,19 @@ func Run() {
 		Addr: os.Getenv("REDIS_ADDR"),
 	})
 
-	// Create a broadcast channel for notifications
-	notificationBroadcast := make(chan services.Notification)
-
 	// Initialize services and controllers
 	imageService := services.NewImageService("./uploads")
 	emailService := services.NewEmailService()
 	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
 	authService := services.NewAuthService(db, imageService, emailService)
 	webSocketService := services.NewWebSocketService()
-	notificationService := services.NewNotificationService(db, redisClient, notificationBroadcast, webSocketService)
+	notificationService, err := services.NewNotificationService()
+	if err != nil {
+		log.Fatalf("Failed to initialize notification service: %v", err)
+	}
+
 	openAIService := services.NewOpenAIService()
-	friendChatService := services.NewFriendChatService(db, webSocketService)
+	friendChatService := services.NewFriendChatService(db, webSocketService, notificationService)
 
 	friendService := services.NewFriendService(db, authService, webSocketService)
 	friendController := controllers.NewFriendController(friendService, notificationService)
@@ -66,6 +67,7 @@ func Run() {
 	openAiController := controllers.NewOpenAiController(openAIService, matchPlayersService)
 	authController := controllers.NewAuthController(authService, imageService, matchService)
 	friendChatController := controllers.NewFriendChatController(friendChatService, friendService)
+	notificationController := controllers.NewNotificationController(notificationService)
 
 	// Configure Fiber app
 	app := fiber.New()
@@ -97,6 +99,8 @@ func Run() {
 	routes.SetupOpenAiRoutes(app, openAiController)
 	routes.SetupFriendRoutes(app, friendController)
 	routes.SetupRoutesFriendMessage(app, friendChatController)
+	routes.SetupNotificationRoutes(app, notificationController)
+
 
 	// Swagger route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
@@ -110,7 +114,7 @@ func Run() {
 	go webSocketService.StartBroadcast()
 
 	// Start listening for notifications
-	go notificationService.ListenForNotifications()
+	// go notificationService.ListenForNotifications()
 
 	// Start server
 	port := os.Getenv("API_PORT")
