@@ -491,20 +491,3 @@ func (ctrl *AuthController) DeleteUserHandler(c *fiber.Ctx) error {
 
 
 
-func (ctrl *AuthController) UpdateFCMTokenHandler(c *fiber.Ctx) error {
-    var req struct {
-        UserID   string `json:"user_id" binding:"required"`
-        FCMToken string `json:"fcm_token" binding:"required"`
-    }
-
-    if err := c.BodyParser(&req); err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-    }
-
-    err := ctrl.AuthService.UpdateFCMToken(req.UserID, req.FCMToken)
-    if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-    }
-
-    return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "FCM token updated successfully"})
-}

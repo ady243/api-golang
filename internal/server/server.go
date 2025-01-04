@@ -43,15 +43,18 @@ func Run() {
 		Addr: os.Getenv("REDIS_ADDR"),
 	})
 
+	// Create a broadcast channel for notifications
+	notificationBroadcast := make(chan services.Notification)
+
 	// Initialize services and controllers
 	imageService := services.NewImageService("./uploads")
 	emailService := services.NewEmailService()
 	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
 	authService := services.NewAuthService(db, imageService, emailService)
 	webSocketService := services.NewWebSocketService()
-	notificationService := services.NewNotificationService(db)
+	notificationService := services.NewNotificationService(db, redisClient, notificationBroadcast, webSocketService)
 	openAIService := services.NewOpenAIService()
-	friendChatService := services.NewFriendChatService(db, webSocketService, notificationService)
+	friendChatService := services.NewFriendChatService(db, webSocketService)
 
 	friendService := services.NewFriendService(db, authService, webSocketService)
 	friendController := controllers.NewFriendController(friendService, notificationService)
@@ -105,6 +108,9 @@ func Run() {
 
 	// Start WebSocket broadcast
 	go webSocketService.StartBroadcast()
+
+	// Start listening for notifications
+	go notificationService.ListenForNotifications()
 
 	// Start server
 	port := os.Getenv("API_PORT")

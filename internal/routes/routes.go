@@ -22,7 +22,7 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Get("/auth/google/callback", controller.GoogleCallback)
 	api.Get("/confirm_email", controller.ConfirmEmailHandler)
 	api.Put("/userUpdate", middlewares.JWTMiddleware, controller.UserUpdate)
-	app.Post("/auth/update_fcm_token", controller.UpdateFCMTokenHandler)
+	
 	// Routes that require authentication
 
 	api.Use(middlewares.JWTMiddleware)
