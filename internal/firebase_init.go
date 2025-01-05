@@ -10,7 +10,6 @@ import (
 	firebase "firebase.google.com/go"
 	"google.golang.org/api/option"
 )
-
 var app *firebase.App
 
 func InitializeFirebase() (*firebase.App, error) {
