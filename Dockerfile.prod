@@ -41,8 +41,11 @@ COPY --from=builder /app/api .
 # Copier la documentation Swagger générée depuis l'image builder
 COPY --from=builder /app/docs ./docs
 
-# Lister les fichiers dans le répertoire docs pour vérifier qu'ils sont bien copiés
-RUN ls -la ./docs
+# Copier le fichier de clés de service Firebase depuis l'image builder
+COPY --from=builder /app/notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json .
+
+# Lister les fichiers dans le répertoire racine pour vérifier qu'ils sont bien copiés
+RUN ls -la
 
 # Exposer le port sur lequel l'application tourne
 EXPOSE 3003
