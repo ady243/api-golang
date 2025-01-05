@@ -13,7 +13,9 @@ import (
 func InitializeFirebase() (*firebase.App, error) {
 	ctx := context.Background()
 
+	// Utilisation d'une variable d'environnement pour le chemin du fichier de credentials
 	credentialsFilePath := os.Getenv("FIREBASE_CREDENTIALS_PATH")
+	log.Printf("Valeur de FIREBASE_CREDENTIALS_PATH: %s", credentialsFilePath)
 	if credentialsFilePath == "" {
 		log.Fatalf("Le chemin des credentials Firebase n'est pas défini")
 	}
