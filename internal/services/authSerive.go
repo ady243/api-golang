@@ -311,24 +311,6 @@ func (s *AuthService) GetPublicUserInfoByID(id string) (models.Users, error) {
 	return user, nil
 }
 
-func (s *AuthService) AssignRefereeRole(organizerID, playerID string) error {
-	var organizer models.Users
-	if err := s.DB.Where("id = ? AND role = ?", organizerID).First(&organizer).Error; err != nil {
-		return errors.New("only organizers can assign referee role")
-	}
-
-	// Attribuer le rôle de referee au joueur
-	var player models.Users
-	if err := s.DB.Where("id = ?", playerID).First(&player).Error; err != nil {
-		return err
-	}
-	if err := s.DB.Save(&player).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s *AuthService) UpdateUserStatistics(userID string, matchesPlayed, matchesWon, goalsScored, behaviorScore int) error {
 	var user models.Users
 	if err := s.DB.Where("id = ?", userID).First(&user).Error; err != nil {

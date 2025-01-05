@@ -578,4 +578,3 @@ func (ctrl *MatchController) LeaveMatchHandler(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Successfully left the match"})
 }
-
