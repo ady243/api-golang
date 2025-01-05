@@ -24,5 +24,4 @@ services:
       EMAIL_PASSWORD: ${EMAIL_PASSWORD}
       ONESIGNAL_API_KEY: ${ONESIGNAL_API_KEY}
       ONESIGNAL_APP_ID: ${ONESIGNAL_APP_ID}
-      FIREBASE_CREDENTIALS_PATH: /opt/render/project/go/src/github.com/ady243/api-golang/fireJson/notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json
 Branch: prod#2
