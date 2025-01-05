@@ -26,6 +26,9 @@ RUN swag init
 # CGO_ENABLED=0 permet de désactiver les dépendances au système pour rendre l'image plus légère
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/api ./main.go
 
+# Lister les fichiers dans le répertoire /app pour vérifier qu'ils sont bien copiés
+RUN ls -la /app
+
 # Étape 2 : Créer une image minimale pour exécuter l'application
 FROM alpine:latest
 
@@ -41,11 +44,11 @@ COPY --from=builder /app/api .
 # Copier la documentation Swagger générée depuis l'image builder
 COPY --from=builder /app/docs ./docs
 
-# Copier le fichier de clés de service Firebase depuis l'image builder
-COPY --from=builder /app/notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json .
+# Copier le fichier de clés de service Firebase depuis le répertoire local
+COPY notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json .
 
 # Lister les fichiers dans le répertoire racine pour vérifier qu'ils sont bien copiés
-RUN ls -la
+RUN ls -la /root
 
 # Exposer le port sur lequel l'application tourne
 EXPOSE 3003
