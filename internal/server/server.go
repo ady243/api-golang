@@ -49,23 +49,25 @@ func Run() {
 	// Initialize services and controllers
 	imageService := services.NewImageService("./uploads")
 	emailService := services.NewEmailService()
-	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient), redisClient)
+	chatService := services.NewChatService(db, redisClient)
+	matchService := services.NewMatchService(db, chatService, redisClient)
 	authService := services.NewAuthService(db, imageService, emailService)
+	matchPlayersService := services.NewMatchPlayersService(db)
+	analystService := services.NewAnalystService(db)
+	openAIService := services.NewOpenAIService()
 	webSocketService := services.NewWebSocketService()
 	notificationService := services.NewNotificationService(db, redisClient, notificationBroadcast, webSocketService)
-	openAIService := services.NewOpenAIService()
 	friendChatService := services.NewFriendChatService(db, webSocketService)
-
 	friendService := services.NewFriendService(db, authService, webSocketService)
-	friendController := controllers.NewFriendController(friendService, notificationService)
-	chatService := services.NewChatService(db, redisClient)
+
+	authController := controllers.NewAuthController(authService, imageService, matchService)
 	matchController := controllers.NewMatchController(matchService, authService, db, chatService, redisClient)
-	matchPlayersService := services.NewMatchPlayersService(db)
 	matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db)
 	chatController := controllers.NewChatController(chatService)
 	openAiController := controllers.NewOpenAiController(openAIService, matchPlayersService)
-	authController := controllers.NewAuthController(authService, imageService, matchService)
-	friendChatController := controllers.NewfriendChatController(friendChatService, friendService)
+	analystController := controllers.NewAnalystController(analystService, authService, db)
+	friendController := controllers.NewFriendController(friendService, notificationService)
+	friendChatController := controllers.NewFriendChatController(friendChatService, friendService)
 
 	// Configure Fiber app
 	app := fiber.New()
@@ -95,6 +97,7 @@ func Run() {
 	routes.SetupRoutesMatchePlayers(app, matchPlayersController)
 	routes.SetupChatRoutes(app, chatController)
 	routes.SetupOpenAiRoutes(app, openAiController)
+	routes.SetupRoutesAnalyst(app, analystController)
 	routes.SetupFriendRoutes(app, friendController)
 	routes.SetupRoutesFriendMessage(app, friendChatController)
 
@@ -112,22 +115,21 @@ func Run() {
 	// Start listening for notifications
 	go notificationService.ListenForNotifications()
 
+	// Background task for updating match statuses
+	go func() {
+		for {
+			if err := matchService.UpdateMatchStatuses(); err != nil {
+				log.Printf("Error updating match statuses: %v", err)
+			}
+			time.Sleep(1 * time.Hour)
+		}
+	}()
+
 	// Start server
 	port := os.Getenv("API_PORT")
 	if port == "" {
 		port = "3003"
 	}
 	log.Printf("Server started on port %s", port)
-
-	go func() {
-		ticker := time.NewTicker(1 * time.Minute)
-		defer ticker.Stop()
-		for range ticker.C {
-			if err := matchService.UpdateMatchStatuses(); err != nil {
-				log.Printf("Erreur lors de la mise à jour des statuts des matchs : %v", err)
-			}
-		}
-	}()
-
 	log.Fatal(app.Listen(":" + port))
 }

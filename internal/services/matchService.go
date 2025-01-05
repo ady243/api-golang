@@ -53,30 +53,6 @@ func (s *MatchService) CreateMatch(match *models.Matches, userID string) error {
 	return nil
 }
 
-// CheckAndResetRole vérifie si le match a expiré et réinitialise le rôle de l'utilisateur
-func (s *MatchService) VerifyAndResetRole(matchID string) error {
-	var match models.Matches
-	if err := s.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
-		return err
-	}
-
-	// Vérifier si le match a expiré
-	if match.EndTime.Before(time.Now()) {
-		var user models.Users
-		if err := s.DB.Where("id = ?", match.OrganizerID).First(&user).Error; err != nil {
-			return err
-		}
-
-		// Mettre à jour le statut du match à "expired"
-		match.Status = models.Expired
-		if err := s.DB.Save(&match).Error; err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // Méthode pour récupérer tous les matchs avec préchargement des informations de l'organisateur
 func (s *MatchService) GetAllMatches() ([]models.Matches, error) {
 	var matches []models.Matches
@@ -106,18 +82,13 @@ func (s *MatchService) UpdateMatch(match *models.Matches) error {
 	return nil
 }
 
-// DeleteMatch supprime un match, si l'utilisateur est l'organisateur.
-// L'ID du match et l'ID de l'utilisateur sont fournis en paramètres.
-// La méthode renvoie une erreur si l'utilisateur n'est pas l'organisateur
-// ou si le match n'est pas trouvé.
+// DeleteMatch supprime un match (soft delete)
 func (s *MatchService) DeleteMatch(matchID, userID string) error {
-	// Récupère le match à partir de son ID
 	match, err := s.GetMatchByID(matchID)
 	if err != nil {
 		return err
 	}
 
-	// Vérifie si l'utilisateur connecté est l'organisateur du match
 	if match.OrganizerID != userID {
 		return fmt.Errorf("you are not authorized to delete this match")
 	}
@@ -128,12 +99,10 @@ func (s *MatchService) DeleteMatch(matchID, userID string) error {
 		return err
 	}
 
-	// Supprime les joueurs du match
 	if err := s.DB.Where("match_id = ?", matchID).Delete(&models.MatchPlayers{}).Error; err != nil {
 		return err
 	}
 
-	// Supprime les messages de chat associés au match
 	if err := s.ChatService.DeleteChatMessages(matchID); err != nil {
 		return err
 	}
@@ -143,7 +112,7 @@ func (s *MatchService) DeleteMatch(matchID, userID string) error {
 
 // Fonction de Haversine pour calculer la distance en km entre deux points
 func calculateDistance(lat1, lon1, lat2, lon2 float64) float64 {
-	const earthRadius = 6371 // Rayon de la Terre en kilomètres
+	const earthRadius = 6371
 	dLat := (lat2 - lat1) * math.Pi / 180.0
 	dLon := (lon1 - lon2) * math.Pi / 180.0
 	a := math.Sin(dLat/2)*math.Sin(dLat/2) + math.Cos(lat1*math.Pi/180.0)*math.Cos(lat2*math.Pi/180.0)*math.Sin(dLon/2)*math.Sin(dLon/2)
@@ -196,47 +165,7 @@ func (s *MatchService) IsUserInMatch(matchID, userID string) error {
 	return nil
 }
 
-// GetMatchByOrganizerID récupère les matchs par l'ID de l'organisateur
-func (s *MatchService) GetMatchByOrganizerID(organizerID string) ([]models.Matches, error) {
-	var matches []models.Matches
-	if err := s.DB.Where("organizer_id = ? AND deleted_at IS NULL", organizerID).Find(&matches).Error; err != nil {
-		return nil, err
-	}
-	return matches, nil
-}
-
-// GetMatchByOrganizerID récupère les matchs par l'ID de l'organisateur
-func (s *MatchService) GetMatchByRefereeID(refereeID string) ([]models.Matches, error) {
-	var matches []models.Matches
-	if err := s.DB.Where("referee_id = ? AND deleted_at IS NULL", refereeID).Find(&matches).Error; err != nil {
-		return nil, err
-	}
-	return matches, nil
-}
-
-// PutRefereeID met à jour la table Matches pour y inscrire le RefereeID
-func (s *MatchService) PutRefereeID(matcheID string, refereeID string) error {
-	if err := s.DB.Model(&models.Matches{}).
-		Where("id = ? AND deleted_at IS NULL", matcheID).
-		Update("referee_id", refereeID).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *MatchService) NotifyMatchStatusUpdate(matchID string, status string) error {
-	message := map[string]string{
-		"match_id": matchID,
-		"status":   status,
-	}
-	messageJSON, err := json.Marshal(message)
-	if err != nil {
-		return err
-	}
-
-	return s.RedisClient.Publish(context.Background(), "match_status_updates", messageJSON).Err()
-}
-
+// UpdateMatchStatuses met à jour les statuts des matchs
 func (s *MatchService) UpdateMatchStatuses() error {
 	var matches []models.Matches
 	if err := s.DB.Find(&matches).Error; err != nil {
@@ -245,59 +174,37 @@ func (s *MatchService) UpdateMatchStatuses() error {
 
 	now := time.Now()
 	for _, match := range matches {
-		if match.Status != models.Completed && match.Status != models.Expired {
-			matchStart := time.Date(match.MatchDate.Year(), match.MatchDate.Month(), match.MatchDate.Day(), match.MatchTime.Hour(), match.MatchTime.Minute(), match.MatchTime.Second(), 0, time.UTC)
-			matchEnd := time.Date(match.MatchDate.Year(), match.MatchDate.Month(), match.MatchDate.Day(), match.EndTime.Hour(), match.EndTime.Minute(), match.EndTime.Second(), 0, time.UTC)
+		matchStart := time.Date(match.MatchDate.Year(), match.MatchDate.Month(), match.MatchDate.Day(), match.MatchTime.Hour(), match.MatchTime.Minute(), match.MatchTime.Second(), 0, time.UTC)
+		matchEnd := matchStart.Add(time.Duration(match.EndTime.Hour())*time.Hour + time.Duration(match.EndTime.Minute())*time.Minute)
 
-			if now.After(matchStart) && now.Before(matchEnd) {
-				match.Status = models.Ongoing
-			} else if now.After(matchEnd) {
-				match.Status = models.Completed
-			} else if now.Before(matchStart) {
-				match.Status = models.Upcoming
-			}
+		if now.After(matchStart) && now.Before(matchEnd) {
+			match.Status = models.Ongoing
+		} else if now.After(matchEnd) {
+			match.Status = models.Completed
+		} else {
+			match.Status = models.Upcoming
+		}
 
-			if err := s.DB.Save(&match).Error; err != nil {
-				return err
-			}
+		if err := s.DB.Save(&match).Error; err != nil {
+			return err
+		}
 
-			// Notifier les clients de la mise à jour du statut du match
-			if err := s.NotifyMatchStatusUpdate(match.ID, string(match.Status)); err != nil {
-				log.Println("Erreur lors de la notification de la mise à jour du statut du match:", err)
-			}
+		if err := s.NotifyMatchStatusUpdate(match.ID, string(match.Status)); err != nil {
+			log.Printf("Erreur lors de la notification : %v", err)
 		}
 	}
 	return nil
 }
 
-func (s *MatchService) AssignReferee(matchID, organizerID, refereeID string) error {
-	// Vérifier si l'utilisateur est l'organisateur du match
-	var match models.Matches
-	if err := s.DB.Where("id = ? AND organizer_id = ?", matchID, organizerID).First(&match).Error; err != nil {
-		return errors.New("unauthorized or match not found")
+// NotifyMatchStatusUpdate notifie les clients des changements de statut
+func (s *MatchService) NotifyMatchStatusUpdate(matchID, status string) error {
+	message := map[string]string{
+		"match_id": matchID,
+		"status":   status,
 	}
-
-	// Vérifier si l'utilisateur est un participant du match
-	var count int64
-	if err := s.DB.Model(&models.MatchPlayers{}).Where("match_id = ? AND player_id = ?", matchID, refereeID).Count(&count).Error; err != nil {
+	messageJSON, err := json.Marshal(message)
+	if err != nil {
 		return err
 	}
-	if count == 0 {
-		return errors.New("user is not a participant in the match")
-	}
-
-	// Mettre à jour le referee_id du match
-	if err := s.DB.Model(&models.Matches{}).Where("id = ?", matchID).Update("referee_id", refereeID).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *MatchService) LeaveMatch(matchID, userID string) error {
-	// Supprimer l'utilisateur de la liste des joueurs du match
-	if err := s.DB.Where("match_id = ? AND player_id = ?", matchID, userID).Delete(&models.MatchPlayers{}).Error; err != nil {
-		return err
-	}
-	return nil
+	return s.RedisClient.Publish(context.Background(), "match_status_updates", messageJSON).Err()
 }
