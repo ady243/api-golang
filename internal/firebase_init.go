@@ -22,7 +22,12 @@ func InitializeFirebase() (*firebase.App, error) {
 
 	opt := option.WithCredentialsFile(credentialsFilePath)
 
-	app, err := firebase.NewApp(ctx, nil, opt)
+	// Configuration explicite de l'ID du projet
+	config := &firebase.Config{
+		ProjectID: "notification-push-40d24",
+	}
+
+	app, err := firebase.NewApp(ctx, config, opt)
 	if err != nil {
 		return nil, fmt.Errorf("erreur lors de l'initialisation de l'application: %v", err)
 	}
