@@ -29,7 +29,6 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Get("/users", controller.GetUsersHandler)
 	api.Delete("/deleteMyAccount", controller.DeleteUserHandler)
 	api.Get("/users/:id/public", controller.GetPublicUserInfoHandler)
-	api.Post("/assignRole/:organizerID/:playerID", controller.AssignRefereeRole)
 	api.Post("/UpdateUserStatistics", controller.UpdateUserStatistics)
 }
 
@@ -52,7 +51,7 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
 	api.Get("/organizer/matches", controller.GetMatchByOrganizerIDHandler)
 	api.Get("/referee/matches", controller.GetMatchByRefereeIDHandler)
 	api.Get("/matches/status/updates", websocket.New(controller.MatchStatusWebSocketHandler))
-	app.Post("/assign-referee", controller.AssignRefereeHandler)
+	api.Post("/assign-referee", controller.AssignRefereeHandler)
 }
 
 // SetupRoutesMatchePlayers sets up the routes for managing match players.
