@@ -14,7 +14,7 @@ import (
 var app *firebase.App
 
 func InitializeFirebase() (*firebase.App, error) {
-	credentialsFilePath := "./notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json"
+	credentialsFilePath := "../notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json"
 
 	absPath, err := filepath.Abs(credentialsFilePath)
 	if err != nil {
