@@ -26,7 +26,8 @@ func InitializeFirebase() (*firebase.App, error) {
     }`
 
 	opt := option.WithCredentialsJSON([]byte(credentials))
-	app, err := firebase.NewApp(context.Background(), &firebase.Config{
+	var err error
+	app, err = firebase.NewApp(context.Background(), &firebase.Config{
 		ProjectID: "notification-push-40d24",
 	}, opt)
 	if err != nil {
