@@ -11,7 +11,7 @@ import (
 var app *firebase.App
 
 func init() {
-	opt := option.WithCredentialsFile("./fireJson/notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json")
+	opt := option.WithCredentialsFile("./notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json")
 	var err error
 	app, err = firebase.NewApp(context.Background(), &firebase.Config{
 		ProjectID: "notification-push-40d24",
