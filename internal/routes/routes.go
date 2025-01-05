@@ -28,6 +28,23 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Get("/users/:id/public", controller.GetPublicUserInfoHandler)
 	api.Post("/assignRole/:organizerID/:playerID", controller.AssignRefereeRole)
 	api.Post("/UpdateUserStatistics", controller.UpdateUserStatistics)
+	// Routes that do not require authentication
+	api.Post("/register", controller.RegisterHandler)
+	api.Post("/login", controller.LoginHandler)
+	api.Post("/refresh", controller.RefreshHandler)
+	api.Get("/auth/google", controller.GoogleLogin)
+	api.Get("/users", controller.GetUsersHandler)
+	api.Get("/auth/google/callback", controller.GoogleCallback)
+	api.Get("/confirm_email", controller.ConfirmEmailHandler)
+	api.Put("/userUpdate", middlewares.JWTMiddleware, controller.UserUpdate)
+	// Routes that require authentication
+
+	api.Use(middlewares.JWTMiddleware)
+	api.Get("/userInfo", controller.UserHandler)
+	api.Delete("/deleteMyAccount", controller.DeleteUserHandler)
+	api.Get("/users/:id/public", controller.GetPublicUserInfoHandler)
+	api.Post("/assignRole/:organizerID/:playerID", controller.AssignRefereeRole)
+	api.Post("/UpdateUserStatistics", controller.UpdateUserStatistics)
 }
 
 // SetupRoutesMatches sets up the routes for managing matches.
@@ -48,6 +65,18 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
 	api.Get("/organizer/matches", controller.GetMatchByOrganizerIDHandler)
 	api.Get("/analyst/matches", controller.GetMatchByRefereeIDHandler)
 	api.Put("/assignAsAnalyst/:match_id/:referee_id", controller.PutRefereeIDHandler)
+	api.Get("/nearby", controller.GetNearbyMatchesHandler)
+	api.Get("/", controller.GetAllMatchesHandler)
+	api.Post("/", controller.CreateMatchHandler)
+	api.Get("/:id", controller.GetMatchByIDHandler)
+	api.Put("/:id", controller.UpdateMatchHandler)
+	api.Delete("/:id", controller.DeleteMatchHandler)
+	api.Post("/:id/join", controller.AddPlayerToMatchHandler)
+	api.Get("/:id/chat", websocket.New(controller.ChatWebSocketHandler))
+	api.Get("/organizer/matches", controller.GetMatchByOrganizerIDHandler)
+	api.Get("/referee/matches", controller.GetMatchByRefereeIDHandler)
+	api.Put("/assignAsAnalyst/:match_id/:referee_id", controller.PutRefereeIDHandler)
+	api.Get("/status/updates", websocket.New(controller.MatchStatusWebSocketHandler))
 }
 
 // SetupRoutesMatchePlayers sets up the routes for managing match players.
@@ -57,6 +86,12 @@ func SetupRoutesMatchePlayers(app *fiber.App, controller *controllers.MatchPlaye
 	// Require authentication
 	api.Use(middlewares.JWTMiddleware)
 
+	api.Get("/:match_id", controller.GetMatchPlayersByMatchIDHandler)
+	api.Post("/", controller.CreateMatchPlayerHandler)
+	api.Put("/assignTeam", controller.AssignTeamToPlayerHandler)
+	api.Delete("/:match_player_id", controller.DeleteMatchPlayerHandler)
+	// Routes that require authentication
+	api.Use(middlewares.JWTMiddleware)
 	api.Get("/:match_id", controller.GetMatchPlayersByMatchIDHandler)
 	api.Post("/", controller.CreateMatchPlayerHandler)
 	api.Put("/assignTeam", controller.AssignTeamToPlayerHandler)
@@ -72,13 +107,16 @@ func SetupChatRoutes(app *fiber.App, controller *controllers.ChatController) {
 
 	api.Post("/chat/send", controller.SendMessage)
 	api.Get("/chat/:matchID", controller.GetMessages)
+	// Routes that require authentication
+	api.Use(middlewares.JWTMiddleware)
+	api.Post("/chat/send", controller.SendMessage)
+	api.Get("/chat/:matchID", controller.GetMessages)
 }
 
 // SetupOpenAiRoutes sets up the routes for using OpenAI services.
 func SetupOpenAiRoutes(app *fiber.App, controller *controllers.OpenAiController) {
 	api := app.Group("/api")
 	api.Use(middlewares.JWTMiddleware)
-
 	api.Get("/openai/formation/:match_id", controller.GetFormationFromAi)
 }
 

@@ -240,53 +240,54 @@ func (ctrl *MatchController) GetMatchByIDHandler(c *fiber.Ctx) error {
 }
 
 func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
-	id := c.Params("id")
+    id := c.Params("id")
 
-	matchID, err := ulid.Parse(id)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
-	}
+    matchID, err := ulid.Parse(id)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+    }
 
-	// Récupérer l'ID de l'utilisateur connecté via le middleware JWT
-	userID := c.Locals("user_id").(string)
+    // Récupérer l'ID de l'utilisateur connecté via le middleware JWT
+    userID := c.Locals("user_id").(string)
 
-	var req struct {
-		RefereeID       *string `json:"referee_id"`
-		Description     *string `json:"description"`
-		MatchDate       string  `json:"match_date"`
-		MatchTime       string  `json:"match_time"`
-		Address         string  `json:"address"`
-		NumberOfPlayers int     `json:"number_of_players"`
-		Status          *string `json:"status"`
-	}
+    var req struct {
+        RefereeID       *string `json:"referee_id"`
+        Description     *string `json:"description"`
+        MatchDate       string  `json:"match_date"`
+        MatchTime       string  `json:"match_time"`
+        Address         string  `json:"address"`
+        NumberOfPlayers int     `json:"number_of_players"`
+        Status          *string `json:"status"`
+    }
 
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
-	}
+    match, err := ctrl.MatchService.GetMatchByID(matchID.String())
+    if err != nil {
+        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
+    }
 
-	// Vérifier si l'utilisateur connecté est l'organisateur du match
-	if match.OrganizerID != userID {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to update this match"})
-	}
+    // Vérifier si l'utilisateur connecté est l'organisateur du match
+    if match.OrganizerID != userID {
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to update this match"})
+    }
 
-	// Mise à jour des champs du match si les données sont fournies
-	if req.RefereeID != nil {
-		refereeID, err := ulid.Parse(*req.RefereeID)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid referee ID"})
-		}
-		refereeIDStr := refereeID.String()
-		match.RefereeID = &refereeIDStr
-	}
+    // Mise à jour des champs du match si les données sont fournies
+    if req.RefereeID != nil {
+        refereeID, err := ulid.Parse(*req.RefereeID)
+        if err != nil {
+            return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid referee ID"})
+        }
+        refereeIDStr := refereeID.String()
+        match.RefereeID = &refereeIDStr
+    }
 
-	if req.Description != nil {
-		match.Description = req.Description
-	}
+    if req.Description != nil {
+        match.Description = req.Description
+    }
+
 	if req.MatchDate != "" {
 		matchDate, err := time.Parse("2006-01-02", req.MatchDate)
 		if err != nil {
@@ -294,63 +295,82 @@ func (ctrl *MatchController) UpdateMatchHandler(c *fiber.Ctx) error {
 		}
 		match.MatchDate = matchDate
 	}
-	if req.MatchTime != "" {
-		matchTime, err := time.Parse("15:04", req.MatchTime)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match time format"})
-		}
-		match.MatchTime = matchTime
-	}
-	if req.Address != "" {
-		match.Address = req.Address
-	}
-	if req.NumberOfPlayers != 0 {
-		match.NumberOfPlayers = req.NumberOfPlayers
-	}
-	if req.Status != nil {
-		match.Status = models.Status(*req.Status)
-	}
+    if req.MatchDate != "" {
+        matchDate, err := time.Parse("2006-01-02", req.MatchDate)
+        if err != nil {
+            return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match date format"})
+        }
+        match.MatchDate = matchDate
+    }
+    if req.MatchTime != "" {
+        matchTime, err := time.Parse("15:04", req.MatchTime)
+        if err != nil {
+            return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match time format"})
+        }
+        match.MatchTime = matchTime
+    }
+    if req.Address != "" {
+        match.Address = req.Address
+    }
+    if req.NumberOfPlayers != 0 {
+        match.NumberOfPlayers = req.NumberOfPlayers
+    }
+    if req.Status != nil {
+        match.Status = models.Status(*req.Status)
+    }
 
-	if err := ctrl.MatchService.UpdateMatch(match); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
+    if err := ctrl.MatchService.UpdateMatch(match); err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	return c.Status(fiber.StatusOK).JSON(match)
+    // Notifier les clients de la mise à jour du statut du match
+    if req.Status != nil {
+        if err := ctrl.MatchService.NotifyMatchStatusUpdate(match.ID, string(match.Status)); err != nil {
+            log.Println("Erreur lors de la notification de la mise à jour du statut du match:", err)
+        }
+    }
+
+    return c.Status(fiber.StatusOK).JSON(match)
 }
 
 // DeleteMatchHandler deletes a match. It requires the user to be the organizer of the match.
 // A soft delete is performed by setting the DeletedAt field to the current time.
 // The match is removed from the chat and all players are removed from the match as well.
 func (ctrl *MatchController) DeleteMatchHandler(c *fiber.Ctx) error {
-	id := c.Params("id")
-	log.Println("Match ID:", id)
+    id := c.Params("id")
+    log.Println("Match ID:", id)
 
-	// Parse l'ID du match
-	matchID, err := ulid.Parse(id)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
-	}
+    // Parse l'ID du match
+    matchID, err := ulid.Parse(id)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID"})
+    }
 
-	// Récupère l'ID de l'utilisateur connecté
-	userID := c.Locals("user_id").(string)
+    // Récupère l'ID de l'utilisateur connecté
+    userID := c.Locals("user_id").(string)
 
-	// Récupère le match à partir de son ID
-	match, err := ctrl.MatchService.GetMatchByID(matchID.String())
-	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
-	}
+    // Récupère le match à partir de son ID
+    match, err := ctrl.MatchService.GetMatchByID(matchID.String())
+    if err != nil {
+        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
+    }
 
-	// Vérifie si l'utilisateur connecté est l'organisateur du match
-	if match.OrganizerID != userID {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to delete this match"})
-	}
+    // Vérifie si l'utilisateur connecté est l'organisateur du match
+    if match.OrganizerID != userID {
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "You are not authorized to delete this match"})
+    }
 
-	// Effectue la suppression douce via le service
-	if err := ctrl.MatchService.DeleteMatch(matchID.String(), userID); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
+    // Effectue la suppression douce via le service
+    if err := ctrl.MatchService.DeleteMatch(matchID.String(), userID); err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	return c.SendStatus(fiber.StatusNoContent)
+    // Notifier les clients de la suppression du match
+    if err := ctrl.MatchService.NotifyMatchStatusUpdate(match.ID, "deleted"); err != nil {
+        log.Println("Erreur lors de la notification de la suppression du match:", err)
+    }
+
+    return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (ctrl *MatchController) ChatWebSocketHandler(c *websocket.Conn) {
@@ -493,4 +513,22 @@ func (ctrl *MatchController) PutRefereeIDHandler(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Referee ID updated successfully"})
+}
+
+func (ctrl *MatchController) MatchStatusWebSocketHandler(c *websocket.Conn) {
+    ctx := context.Background()
+    pubsub := ctrl.RedisClient.Subscribe(ctx, "match_status_updates")
+    defer pubsub.Close()
+
+    for {
+        msg, err := pubsub.ReceiveMessage(ctx)
+        if err != nil {
+            log.Printf("Erreur de réception de message dans Redis : %v", err)
+            break
+        }
+        if err := c.WriteMessage(websocket.TextMessage, []byte(msg.Payload)); err != nil {
+            log.Printf("Erreur d'envoi de message WebSocket : %v", err)
+            break
+        }
+    }
 }
