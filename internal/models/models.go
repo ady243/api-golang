@@ -38,4 +38,9 @@ type Users struct {
 	IsConfirmed       bool       `json:"is_confirmed" gorm:"default:false"`
 	ConfirmationToken string     `json:"confirmation_token" gorm:"size:255"`
 	TokenExpiresAt    *time.Time `json:"token_expires_at"`
+
+	SentFriendRequests     []FriendRequest `json:"sent_friend_requests" gorm:"foreignKey:SenderId"`
+	ReceivedFriendRequests []FriendRequest `json:"received_friend_requests" gorm:"foreignKey:ReceiverId"`
+
+	FCMToken string `json:"fcm_token"`
 }

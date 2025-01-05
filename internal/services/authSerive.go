@@ -230,22 +230,27 @@ func (s *AuthService) GetPublicUserInfo(id string) (map[string]interface{}, erro
 }
 
 // Refresh génère un nouveau accessToken à partir d'un refreshToken valide
-func (s *AuthService) Refresh(refreshToken string) (string, error) {
+func (s *AuthService) Refresh(refreshToken string) (string, string, error) {
 	claims, err := middlewares.ParseToken(refreshToken)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if claims.ExpiresAt < time.Now().Unix() {
-		return "", errors.New("refresh token expired")
+		return "", "", errors.New("refresh token expired")
 	}
 
 	accessToken, err := middlewares.GenerateToken(claims.UserID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return accessToken, nil
+	newRefreshToken, err := middlewares.GenerateRefreshToken(claims.UserID)
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, newRefreshToken, nil
 }
 
 // UpdateRefreshToken met à jour le token de rafraîchissement pour un utilisateur spécifique
@@ -324,8 +329,6 @@ func (s *AuthService) AssignRefereeRole(organizerID, playerID string) error {
 	return nil
 }
 
-
-
 func (s *AuthService) UpdateUserStatistics(userID string, matchesPlayed, matchesWon, goalsScored, behaviorScore int) error {
 	var user models.Users
 	if err := s.DB.Where("id = ?", userID).First(&user).Error; err != nil {
@@ -338,6 +341,30 @@ func (s *AuthService) UpdateUserStatistics(userID string, matchesPlayed, matches
 	user.BehaviorScore = behaviorScore
 
 	if err := s.DB.Save(&user).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *AuthService) DeleteUserAndRelatedData(userID string) error {
+	if err := s.DB.Where("sender_id = ?", userID).Delete(&models.FriendRequest{}).Error; err != nil {
+		return err
+	}
+
+	if err := s.DB.Where("receiver_id = ?", userID).Delete(&models.FriendRequest{}).Error; err != nil {
+		return err
+	}
+
+	if err := s.DB.Where("organizer_id = ?", userID).Delete(&models.Matches{}).Error; err != nil {
+		return err
+	}
+
+	if err := s.DB.Where("player_id = ?", userID).Delete(&models.MatchPlayers{}).Error; err != nil {
+		return err
+	}
+
+	if err := s.DB.Where("id = ?", userID).Delete(&models.Users{}).Error; err != nil {
 		return err
 	}
 

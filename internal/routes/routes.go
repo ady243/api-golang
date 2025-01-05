@@ -43,12 +43,14 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
 	api.Put("/:id", controller.UpdateMatchHandler)
 	api.Delete("/:id", controller.DeleteMatchHandler)
 	api.Post("/:id/join", controller.AddPlayerToMatchHandler)
+	api.Post("/:id/leave", controller.LeaveMatchHandler)
 	api.Get("/:id", controller.GetMatchByIDHandler)
 	api.Get("/:id/chat", websocket.New(controller.ChatWebSocketHandler))
 	api.Get("/organizer/matches", controller.GetMatchByOrganizerIDHandler)
 	api.Get("/referee/matches", controller.GetMatchByRefereeIDHandler)
 	api.Put("/assignAsAnalyst/:match_id/:referee_id", controller.PutRefereeIDHandler)
 	api.Get("/status/updates", websocket.New(controller.MatchStatusWebSocketHandler))
+	app.Post("/assign-referee", controller.AssignRefereeHandler)
 }
 
 // SetupRoutesMatchePlayers sets up the routes for managing match players.
@@ -92,4 +94,30 @@ func SetupRoutesAnalyst(app *fiber.App, controller *controllers.AnalystControlle
 	api.Get("/player/:player_id/events", controller.GetEventsByPlayerHandler)
 	api.Put("/events/:event_id", controller.UpdateEventHandler)
 	api.Delete("/events/:event_id", controller.DeleteEventHandler)
+}
+
+// SetupRoutesFriend sets up the routes for managing friend requests.
+func SetupFriendRoutes(app *fiber.App, friendController *controllers.FriendController) {
+	api := app.Group("/api")
+	api.Use(middlewares.JWTMiddleware)
+	api.Post("/friend/send", friendController.SendFriendRequest)
+	api.Post("/friend/accept", friendController.AcceptFriendRequest)
+	api.Post("/friend/decline", friendController.DeclineFriendRequest)
+	api.Get("/friend/requests/:userID", friendController.GetFriendRequests)
+	api.Get("/friend/:userID", friendController.GetFriends)
+	api.Get("/friend/search", friendController.SearchUsersByUsername)
+}
+
+// SetupRoutesFriendMessage sets up the routes for managing messages between friends.
+func SetupRoutesFriendMessage(app *fiber.App, friendChatController *controllers.FriendChatController) {
+	api := app.Group("/api")
+	api.Use(middlewares.JWTMiddleware)
+	api.Post("/message/send", friendChatController.SendMessage)
+	api.Get("/message/messages/:senderID/:receiverID", friendChatController.GetMessages)
+}
+
+// SetupRoutesWebSocket sets up the routes for WebSocket connections.
+func SetupRoutesWebSocket(app *fiber.App, controller *controllers.WebSocketController) {
+	api := app.Group("/api")
+	api.Get("/matches/status/updates", websocket.New(controller.WebSocketHandler))
 }

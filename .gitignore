@@ -58,5 +58,8 @@ Dockerfile
 # Ignore go.mod
 go.mod
 
-#Ingnore render 
 
+
+.env
+
+./env

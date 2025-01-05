@@ -16,6 +16,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
 	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
@@ -33,7 +34,7 @@ func Run() {
 	}
 
 	// Table migration
-	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}, &models.Analyst{}); err != nil {
+	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}, &models.FriendRequest{}, &models.Message{}); err != nil {
 		log.Printf("Error migrating database: %v", err)
 	}
 
@@ -41,6 +42,9 @@ func Run() {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: os.Getenv("REDIS_ADDR"),
 	})
+
+	// Create a broadcast channel for notifications
+	notificationBroadcast := make(chan services.Notification)
 
 	// Initialize services and controllers
 	imageService := services.NewImageService("./uploads")
@@ -51,13 +55,19 @@ func Run() {
 	matchPlayersService := services.NewMatchPlayersService(db)
 	analystService := services.NewAnalystService(db)
 	openAIService := services.NewOpenAIService()
+	webSocketService := services.NewWebSocketService()
+	notificationService := services.NewNotificationService(db, redisClient, notificationBroadcast, webSocketService)
+	friendChatService := services.NewFriendChatService(db, webSocketService)
+	friendService := services.NewFriendService(db, authService, webSocketService)
 
 	authController := controllers.NewAuthController(authService, imageService, matchService)
-	matchController := controllers.NewMatchController(matchService, authService, db, chatService)
+	matchController := controllers.NewMatchController(matchService, authService, db, chatService, redisClient)
 	matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db)
 	chatController := controllers.NewChatController(chatService)
 	openAiController := controllers.NewOpenAiController(openAIService, matchPlayersService)
 	analystController := controllers.NewAnalystController(analystService, authService, db)
+	friendController := controllers.NewFriendController(friendService, notificationService)
+	friendChatController := controllers.NewFriendChatController(friendChatService, friendService)
 
 	// Configure Fiber app
 	app := fiber.New()
@@ -88,16 +98,22 @@ func Run() {
 	routes.SetupChatRoutes(app, chatController)
 	routes.SetupOpenAiRoutes(app, openAiController)
 	routes.SetupRoutesAnalyst(app, analystController)
+	routes.SetupFriendRoutes(app, friendController)
+	routes.SetupRoutesFriendMessage(app, friendChatController)
 
 	// Swagger route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
-	// Start server
-	port := os.Getenv("API_PORT")
-	if port == "" {
-		port = "3003"
-	}
-	log.Printf("Server started on port %s", port)
+	// WebSocket route
+	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
+		webSocketService.HandleWebSocket(c)
+	}))
+
+	// Start WebSocket broadcast
+	go webSocketService.StartBroadcast()
+
+	// Start listening for notifications
+	go notificationService.ListenForNotifications()
 
 	// Background task for updating match statuses
 	go func() {
@@ -109,5 +125,11 @@ func Run() {
 		}
 	}()
 
+	// Start server
+	port := os.Getenv("API_PORT")
+	if port == "" {
+		port = "3003"
+	}
+	log.Printf("Server started on port %s", port)
 	log.Fatal(app.Listen(":" + port))
 }
