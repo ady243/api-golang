@@ -44,9 +44,6 @@ COPY --from=builder /app/api .
 # Copier la documentation Swagger générée depuis l'image builder
 COPY --from=builder /app/docs ./docs
 
-# Copier le fichier de clés de service Firebase depuis le répertoire local
-COPY notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json .
-
 # Lister les fichiers dans le répertoire racine pour vérifier qu'ils sont bien copiés
 RUN ls -la /root
 
