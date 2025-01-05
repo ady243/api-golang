@@ -42,10 +42,17 @@ func (s *FriendChatService) SendMessage(senderID, receiverID, content string) er
 	}
 	log.Printf("Stored message in database for %s to %s", senderID, receiverID)
 
+	// Récupérer le token FCM du destinataire
+	var receiver models.Users
+	if err := s.DB.Where("id = ?", receiverID).First(&receiver).Error; err != nil {
+		log.Printf("Failed to fetch receiver: %v", err)
+		return fmt.Errorf("failed to fetch receiver: %w", err)
+	}
+
 	// Envoi de notification via Firebase
 	err := s.NotificationService.SendPushNotification(
-		"receiver_fcm_token",
-		"vous avez un nouveau message",
+		receiver.FCMToken,
+		"Vous avez un nouveau message",
 		content,
 	)
 	if err != nil {

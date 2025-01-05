@@ -73,7 +73,7 @@ func Run() {
 	chatController := controllers.NewChatController(chatService)
 	openAiController := controllers.NewOpenAiController(openAIService, matchPlayersService)
 	authController := controllers.NewAuthController(authService, imageService, matchService)
-	friendChatController := controllers.NewFriendChatController(friendChatService, friendService)
+	friendChatController := controllers.NewFriendChatController(friendChatService, friendService, notificationService)
 	notificationController := controllers.NewNotificationController(notificationService)
 
 	// Configure Fiber app
