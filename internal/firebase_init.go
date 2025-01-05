@@ -1,36 +1,26 @@
 package internal
 
-import (
-	"context"
-	"fmt"
-	"log"
-	"os"
 
-	firebase "firebase.google.com/go"
-	"google.golang.org/api/option"
+import (
+    "context"
+    "log"
+
+    firebase "firebase.google.com/go"
+
+    "google.golang.org/api/option"
 )
 
-func InitializeFirebase() (*firebase.App, error) {
-	ctx := context.Background()
+var app *firebase.App
 
-	// Utilisation d'une variable d'environnement pour le chemin du fichier de credentials
-	credentialsFilePath := os.Getenv("FIREBASE_CREDENTIALS_PATH")
-	log.Printf("Valeur de FIREBASE_CREDENTIALS_PATH: %s", credentialsFilePath)
-	if credentialsFilePath == "" {
-		log.Fatalf("Le chemin des credentials Firebase n'est pas défini")
-	}
+func InitializeFirebase() {
+    opt := option.WithCredentialsFile("./fireJson/notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json")
+    var err error
+    app, err = firebase.NewApp(context.Background(), nil, opt)
+    if err != nil {
+        log.Fatalf("erreur lors de l'initialisation de l'application: %v", err)
+    }
+}
 
-	opt := option.WithCredentialsFile(credentialsFilePath)
-
-	// Configuration explicite de l'ID du projet
-	config := &firebase.Config{
-		ProjectID: "notification-push-40d24",
-	}
-
-	app, err := firebase.NewApp(ctx, config, opt)
-	if err != nil {
-		return nil, fmt.Errorf("erreur lors de l'initialisation de l'application: %v", err)
-	}
-
-	return app, nil
+func GetFirebaseApp() *firebase.App {
+    return app
 }

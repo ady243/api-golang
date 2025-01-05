@@ -16,10 +16,9 @@ type NotificationService struct {
 }
 
 func NewNotificationService() (*NotificationService, error) {
-	app, err := internal.InitializeFirebase()
-	if err != nil {
-		log.Fatalf("Erreur lors de l'initialisation de Firebase: %v", err)
-		return nil, err
+	app := internal.GetFirebaseApp()
+	if app == nil {
+		return nil, fmt.Errorf("Firebase app non initialisée")
 	}
 
 	client, err := app.Messaging(context.Background())
@@ -43,7 +42,6 @@ func (ns *NotificationService) SendPushNotification(token, title, body string) e
 		},
 	}
 
-	// Envoie de la notification
 	response, err := ns.client.Send(context.Background(), message)
 	if err != nil {
 		return fmt.Errorf("échec de l'envoi de la notification: %w", err)
