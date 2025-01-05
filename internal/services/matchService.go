@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ady243/teamup/internal/models"
+	"github.com/go-redis/redis/v8"
 	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
@@ -18,12 +19,14 @@ import (
 type MatchService struct {
 	DB          *gorm.DB
 	ChatService *ChatService
+	RedisClient *redis.Client
 }
 
-func NewMatchService(db *gorm.DB, chatService *ChatService) *MatchService {
+func NewMatchService(db *gorm.DB, chatService *ChatService,  redisClient *redis.Client) *MatchService {
 	return &MatchService{
 		DB:          db,
 		ChatService: chatService,
+		RedisClient: redisClient,
 	}
 }
 
@@ -235,23 +238,32 @@ func (s *MatchService) NotifyMatchStatusUpdate(matchID string, status string) er
 
 func (s *MatchService) UpdateMatchStatuses() error {
     var matches []models.Matches
-    if err := s.DB.Where("status IN (?)", []string{string(models.Upcoming), string(models.Ongoing)}).Find(&matches).Error; err != nil {
+    if err := s.DB.Find(&matches).Error; err != nil {
         return err
     }
 
     now := time.Now()
     for _, match := range matches {
         matchDateTime := time.Date(match.MatchDate.Year(), match.MatchDate.Month(), match.MatchDate.Day(), match.MatchTime.Hour(), match.MatchTime.Minute(), match.MatchTime.Second(), 0, time.UTC)
-        if matchDateTime.Before(now) && match.Status == models.Upcoming {
-            match.Status = models.Ongoing
+        var status string
+        if matchDateTime.After(now) {
+            status = "upcoming"
+        } else if matchDateTime.Before(now) && match.EndTime.After(now) {
+            status = "ongoing"
+        } else if match.EndTime.Before(now) {
+            status = "completed"
         }
-        if match.EndTime.Before(now) && match.Status == models.Ongoing {
-            match.Status = models.Completed
+
+        message := map[string]string{
+            "match_id": match.ID,
+            "status":   status,
         }
-        if match.EndTime.Add(24 * time.Hour).Before(now) && match.Status == models.Completed {
-            match.Status = models.Expired
+        messageJSON, err := json.Marshal(message)
+        if err != nil {
+            return err
         }
-        if err := s.DB.Save(&match).Error; err != nil {
+
+        if err := s.RedisClient.Publish(context.Background(), "match_status_updates", messageJSON).Err(); err != nil {
             return err
         }
     }

@@ -45,18 +45,18 @@ func Run() {
 	// Initialize services and controllers
 	imageService := services.NewImageService("./uploads")
 	emailService := services.NewEmailService()
-	matchService := services.NewMatchService(db, services.NewChatService(db, redisClient))
-	authService := services.NewAuthService(db, imageService, emailService)
-	authController := controllers.NewAuthController(authService, imageService, matchService)
-	matchService = services.NewMatchService(db, services.NewChatService(db, redisClient))
-	openAIService := services.NewOpenAIService()
 	chatService := services.NewChatService(db, redisClient)
-	matchController := controllers.NewMatchController(matchService, authService, db, chatService)
+	matchService := services.NewMatchService(db, chatService, redisClient)
+	authService := services.NewAuthService(db, imageService, emailService)
 	matchPlayersService := services.NewMatchPlayersService(db)
+	analystService := services.NewAnalystService(db)
+	openAIService := services.NewOpenAIService()
+
+	authController := controllers.NewAuthController(authService, imageService, matchService)
+	matchController := controllers.NewMatchController(matchService, authService, db, chatService)
 	matchPlayersController := controllers.NewMatchPlayersController(matchPlayersService, authService, db)
 	chatController := controllers.NewChatController(chatService)
 	openAiController := controllers.NewOpenAiController(openAIService, matchPlayersService)
-	analystService := services.NewAnalystService(db)
 	analystController := controllers.NewAnalystController(analystService, authService, db)
 
 	// Configure Fiber app
@@ -98,6 +98,8 @@ func Run() {
 		port = "3003"
 	}
 	log.Printf("Server started on port %s", port)
+
+	// Background task for updating match statuses
 	go func() {
 		for {
 			if err := matchService.UpdateMatchStatuses(); err != nil {
@@ -106,5 +108,6 @@ func Run() {
 			time.Sleep(1 * time.Hour)
 		}
 	}()
+
 	log.Fatal(app.Listen(":" + port))
 }
