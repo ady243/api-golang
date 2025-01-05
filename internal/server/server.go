@@ -6,6 +6,7 @@ import (
 	"time"
 
 	_ "github.com/ady243/teamup/docs"
+	"github.com/ady243/teamup/internal"
 	"github.com/ady243/teamup/internal/controllers"
 	"github.com/ady243/teamup/internal/models"
 	"github.com/ady243/teamup/internal/routes"
@@ -42,6 +43,12 @@ func Run() {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: os.Getenv("REDIS_ADDR"),
 	})
+
+	// Initialize Firebase
+	_, err = internal.InitializeFirebase()
+	if err != nil {
+		log.Fatalf("Failed to initialize Firebase: %v", err)
+	}
 
 	// Initialize services and controllers
 	imageService := services.NewImageService("./uploads")
