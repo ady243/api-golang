@@ -101,7 +101,6 @@ func Run() {
 	routes.SetupRoutesFriendMessage(app, friendChatController)
 	routes.SetupNotificationRoutes(app, notificationController)
 
-
 	// Swagger route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 

@@ -18,7 +18,7 @@ type NotificationService struct {
 func NewNotificationService() (*NotificationService, error) {
 	app := internal.GetFirebaseApp()
 	if app == nil {
-		return nil, fmt.Errorf("Firebase app non initialisée")
+		return nil, fmt.Errorf("firebase app non initialisée")
 	}
 
 	client, err := app.Messaging(context.Background())
