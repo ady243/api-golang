@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"path/filepath"
+	"os"
 
 	firebase "firebase.google.com/go"
 	"google.golang.org/api/option"
@@ -13,12 +13,10 @@ import (
 func InitializeFirebase() (*firebase.App, error) {
 	ctx := context.Background()
 
-	credentialsFilePath, err := filepath.Abs("./fireJson/notification-push-40d24-firebase-adminsdk-yla8e-95ee6971eb.json")
-	if err != nil {
-		log.Fatalf("Erreur lors de la résolution du chemin absolu: %v", err)
+	credentialsFilePath := os.Getenv("FIREBASE_CREDENTIALS_PATH")
+	if credentialsFilePath == "" {
+		log.Fatalf("Le chemin des credentials Firebase n'est pas défini")
 	}
-
-	log.Printf("Chemin absolu du fichier de credentials: %s", credentialsFilePath)
 
 	opt := option.WithCredentialsFile(credentialsFilePath)
 
