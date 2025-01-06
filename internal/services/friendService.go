@@ -70,20 +70,20 @@ func (s *FriendService) SendFriendRequest(senderId, receiverId string) error {
 	return nil
 }
 
-// AcceptFriendRequest accepts a pending friend request
+// AcceptFriendRequest accepte une demande d'ami en attente
 func (s *FriendService) AcceptFriendRequest(senderId, receiverId string) error {
 	log.Printf("Accepting friend request from %s to %s", senderId, receiverId)
 
-	// Check if the friend request exists in the database
+	// Vérifiez si la demande d'ami existe dans la base de données
 	var friendRequest models.FriendRequest
-	if err := s.DB.Where("sender_id = ? AND receiver_id = ?", senderId, receiverId).First(&friendRequest).Error; err != nil {
+	if err := s.DB.Where("sender_id = ? AND receiver_id = ? AND status = ?", senderId, receiverId, "pending").First(&friendRequest).Error; err != nil {
 		log.Printf("Friend request not found for %s to %s: %v", senderId, receiverId, err)
 		return fmt.Errorf("friend request not found: %w", err)
 	}
 
 	log.Printf("Friend request found: %v", friendRequest)
 
-	// Update the status of the friend request
+	// Mettez à jour le statut de la demande d'ami
 	friendRequest.Status = "accepted"
 	if err := s.DB.Save(&friendRequest).Error; err != nil {
 		log.Printf("Failed to update friend request status: %v", err)
@@ -92,21 +92,21 @@ func (s *FriendService) AcceptFriendRequest(senderId, receiverId string) error {
 
 	log.Printf("Accepted friend request from %s to %s", senderId, receiverId)
 
-	// Send notification via WebSocket
+	// Envoyer une notification via WebSocket
 	notification := map[string]string{
 		"type":       "friend_request_accepted",
 		"senderId":   senderId,
 		"receiverId": receiverId,
 	}
 
-	// Serialize the notification
+	// Sérialiser la notification
 	notificationData, err := json.Marshal(notification)
 	if err != nil {
 		log.Printf("Failed to marshal notification: %v", err)
 		return fmt.Errorf("failed to marshal notification: %w", err)
 	}
 
-	// Send the notification via WebSocketService
+	// Envoyer la notification via WebSocketService
 	s.WebSocketService.broadcast <- notificationData
 
 	return nil
