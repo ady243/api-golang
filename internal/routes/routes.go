@@ -128,5 +128,9 @@ func SetupRoutesFriendMessage(app *fiber.App, friendChatController *controllers.
 }
 
 func SetupNotificationRoutes(app *fiber.App, notificationController *controllers.NotificationController) {
-	app.Post("/send-notification", notificationController.SendPushNotification)
+	api := app.Group("/api")
+	api.Post("/send-notification", notificationController.SendPushNotification)
+    api.Get("/notifications/:token", notificationController.GetUnreadNotifications)
+    api.Post("/notifications/:token/read", notificationController.MarkNotificationsAsRead)
+	api.Post("/send-notification", notificationController.SendPushNotification)
 }
