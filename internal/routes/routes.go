@@ -22,6 +22,7 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Get("/auth/google/callback", controller.GoogleCallback)
 	api.Get("/confirm_email", controller.ConfirmEmailHandler)
 	api.Put("/userUpdate", middlewares.JWTMiddleware, controller.UserUpdate)
+
 	// Routes that require authentication
 
 	api.Use(middlewares.JWTMiddleware)
@@ -30,6 +31,7 @@ func SetupRoutesAuth(app *fiber.App, controller *controllers.AuthController) {
 	api.Delete("/deleteMyAccount", controller.DeleteUserHandler)
 	api.Get("/users/:id/public", controller.GetPublicUserInfoHandler)
 	api.Post("/UpdateUserStatistics", controller.UpdateUserStatistics)
+
 }
 
 // SetupRoutesMatches sets up the routes for managing matches.
@@ -123,4 +125,8 @@ func SetupRoutesFriendMessage(app *fiber.App, friendChatController *controllers.
 	api.Use(middlewares.JWTMiddleware)
 	api.Post("/message/send", friendChatController.SendMessage)
 	api.Get("/message/messages/:senderID/:receiverID", friendChatController.GetMessages)
+}
+
+func SetupNotificationRoutes(app *fiber.App, notificationController *controllers.NotificationController) {
+	app.Post("/send-notification", notificationController.SendPushNotification)
 }

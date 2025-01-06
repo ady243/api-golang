@@ -16,12 +16,14 @@ type SuccessResponse struct {
 }
 
 type ChatController struct {
-	ChatService *services.ChatService
+	ChatService         *services.ChatService
+	NotificationService *services.NotificationService
 }
 
-func NewChatController(chatService *services.ChatService) *ChatController {
+func NewChatController(chatService *services.ChatService, notificationService *services.NotificationService) *ChatController {
 	return &ChatController{
-		ChatService: chatService,
+		ChatService:         chatService,
+		NotificationService: notificationService,
 	}
 }
 
@@ -51,6 +53,27 @@ func (ctrl *ChatController) SendMessage(c *fiber.Ctx) error {
 	if err := ctrl.ChatService.AddMessage(req.MatchID, req.UserID, req.Message); err != nil {
 		log.Printf("Error saving message: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: "Could not save message"})
+	}
+
+	// Récupérer les tokens FCM des participants
+	participants, err := ctrl.ChatService.GetParticipants(req.MatchID)
+	if err != nil {
+		log.Printf("Error fetching participants: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: "Could not fetch participants"})
+	}
+
+	// Envoyer une notification push aux participants
+	for _, participant := range participants {
+		if participant.ID != req.UserID {
+			err := ctrl.NotificationService.SendPushNotification(
+				participant.FCMToken,
+				"TeamUp",
+				"Vous avez reçu un nouveau message dans votre match 😶",
+			)
+			if err != nil {
+				log.Printf("Failed to send push notification: %v", err)
+			}
+		}
 	}
 
 	return c.Status(fiber.StatusOK).JSON(SuccessResponse{Status: "Message sent"})

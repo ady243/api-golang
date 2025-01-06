@@ -11,14 +11,16 @@ import (
 )
 
 type FriendChatService struct {
-	DB               *gorm.DB
-	WebSocketService *WebSocketService
+	DB                  *gorm.DB
+	WebSocketService    *WebSocketService
+	NotificationService *NotificationService
 }
 
-func NewFriendChatService(db *gorm.DB, webSocketService *WebSocketService) *FriendChatService {
+func NewFriendChatService(db *gorm.DB, webSocketService *WebSocketService, notificationService *NotificationService) *FriendChatService {
 	return &FriendChatService{
-		DB:               db,
-		WebSocketService: webSocketService,
+		DB:                  db,
+		WebSocketService:    webSocketService,
+		NotificationService: notificationService,
 	}
 }
 
@@ -40,7 +42,24 @@ func (s *FriendChatService) SendMessage(senderID, receiverID, content string) er
 	}
 	log.Printf("Stored message in database for %s to %s", senderID, receiverID)
 
-	// Send notification via WebSocket
+	// Récupérer le token FCM du destinataire
+	var receiver models.Users
+	if err := s.DB.Where("id = ?", receiverID).First(&receiver).Error; err != nil {
+		log.Printf("Failed to fetch receiver: %v", err)
+		return fmt.Errorf("failed to fetch receiver: %w", err)
+	}
+
+	// Envoi de notification via Firebase
+	err := s.NotificationService.SendPushNotification(
+		receiver.FCMToken,
+		"Vous avez un nouveau message",
+		content,
+	)
+	if err != nil {
+		log.Printf("Failed to send push notification: %v", err)
+		return fmt.Errorf("failed to send push notification: %w", err)
+	}
+
 	notification := map[string]string{
 		"type":       "new_message",
 		"senderID":   senderID,
@@ -48,14 +67,12 @@ func (s *FriendChatService) SendMessage(senderID, receiverID, content string) er
 		"content":    content,
 	}
 
-	// Serialize the notification
 	notificationData, err := json.Marshal(notification)
 	if err != nil {
 		log.Printf("Failed to marshal notification: %v", err)
 		return fmt.Errorf("failed to marshal notification: %w", err)
 	}
 
-	// Send the notification via WebSocketService
 	s.WebSocketService.broadcast <- notificationData
 
 	return nil
