@@ -101,3 +101,14 @@ func (s *ChatService) DeleteChatMessages(matchID string) error {
 
     return nil
 }
+
+
+func (s *ChatService) GetParticipants(matchID string) ([]models.Users, error) {
+    var participants []models.Users
+    if err := s.DB.Joins("JOIN match_players ON match_players.player_id = users.id").
+        Where("match_players.match_id = ?", matchID).
+        Find(&participants).Error; err != nil {
+        return nil, err
+    }
+    return participants, nil
+}

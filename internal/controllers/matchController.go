@@ -22,11 +22,13 @@ import (
 )
 
 type MatchController struct {
-	MatchService *services.MatchService
-	ChatService  *services.ChatService
-	RedisClient  *redis.Client
-	AuthService  *services.AuthService
-	DB           *gorm.DB
+	MatchService        *services.MatchService
+	ChatService         *services.ChatService
+	RedisClient         *redis.Client
+	AuthService         *services.AuthService
+	DB                  *gorm.DB
+	NotificationService *services.NotificationService
+	MatchPlayersService *services.MatchPlayersService
 }
 
 type GeoResponse struct {
@@ -40,24 +42,23 @@ type GeoResponse struct {
 	} `json:"results"`
 }
 
-func NewMatchController(matchService *services.MatchService, authService *services.AuthService, db *gorm.DB, chatService *services.ChatService, redisClient *redis.Client) *MatchController {
+func NewMatchController(matchService *services.MatchService, authService *services.AuthService, db *gorm.DB, chatService *services.ChatService, redisClient *redis.Client, matchPlayersService *services.MatchPlayersService) *MatchController {
 	return &MatchController{
-		MatchService: matchService,
-		AuthService:  authService,
-		DB:           db,
-		ChatService:  chatService,
-		RedisClient:  redisClient,
+		MatchService:        matchService,
+		AuthService:         authService,
+		DB:                  db,
+		ChatService:         chatService,
+		RedisClient:         redisClient,
+		MatchPlayersService: matchPlayersService,
 	}
 }
 
 func (ctrl *MatchController) GetAllMatchesHandler(c *fiber.Ctx) error {
-	// Appelle le service pour récupérer tous les matchs
 	matches, err := ctrl.MatchService.GetAllMatches()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not retrieve matches"})
 	}
 
-	// Prépare une liste de matchs avec les informations filtrées de l'organisateur
 	var filteredMatches []fiber.Map
 	for _, match := range matches {
 		organizer := fiber.Map{
@@ -457,6 +458,25 @@ func (ctrl *MatchController) AddPlayerToMatchHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not join chat"})
 	}
 
+	// Récupérer le token FCM de l'organisateur
+	var match models.Matches
+	if err := ctrl.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Match not found"})
+	}
+
+	var organizer models.Users
+	if err := ctrl.DB.Where("id = ?", match.OrganizerID).First(&organizer).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Organizer not found"})
+	}
+
+	err := ctrl.NotificationService.SendPushNotification(
+		organizer.FCMToken,
+		"TeamUp",
+		"Un Nouveau joueur a rejoint le match ! 🥳",
+	)
+	if err != nil {
+		log.Printf("Failed to send push notification: %v", err)
+	}
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "Joined match and chat"})
 }
 
@@ -576,6 +596,38 @@ func (ctrl *MatchController) LeaveMatchHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	// Récupérer les informations du match
+	var match models.Matches
+	if err := ctrl.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Match not found"})
+	}
+
+	// Récupérer les informations de l'utilisateur qui quitte le match
+	var user models.Users
+	if err := ctrl.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	// Récupérer les participants du match
+	participants, err := ctrl.MatchPlayersService.GetMatchPlayersByMatchID(matchID)
+	if err != nil {
+		log.Printf("Error fetching participants: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not fetch participants"})
+	}
+
+	// Envoyer une notification push aux participants
+	for _, participant := range participants {
+		if participant.PlayerID != userID {
+			err := ctrl.NotificationService.SendPushNotification(
+				participant.Player.FCMToken,
+				"Teamup match",
+				user.Username+" a quitté le match 😮",
+			)
+			if err != nil {
+				log.Printf("Failed to send push notification: %v", err)
+			}
+		}
+	}
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Successfully left the match"})
 }
-
