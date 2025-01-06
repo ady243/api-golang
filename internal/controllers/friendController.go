@@ -87,6 +87,12 @@ func (fc *FriendController) AcceptFriendRequest(c *fiber.Ctx) error {
 		})
 	}
 
+	if request.SenderId == "" || request.ReceiverId == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "sender_id and receiver_id cannot be empty",
+		})
+	}
+
 	if err := fc.FriendService.AcceptFriendRequest(request.SenderId, request.ReceiverId); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
