@@ -85,6 +85,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.1.1 // indirect
+	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gofiber/websocket/v2 v2.2.1
 	github.com/google/uuid v1.6.0

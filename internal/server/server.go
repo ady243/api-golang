@@ -79,7 +79,7 @@ func Run() {
 	authController := controllers.NewAuthController(authService, imageService, matchService)
 	friendChatController := controllers.NewFriendChatController(friendChatService, friendService, notificationService)
 	notificationController := controllers.NewNotificationController(notificationService)
-	analystController := controllers.NewAnalystController(analystService, authService, db)
+	analystController := controllers.NewAnalystController(analystService, authService, webSocketService, db)
 
 	// Configure Fiber app
 	app := fiber.New()
@@ -122,16 +122,16 @@ func Run() {
 	// Swagger route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
-	// WebSocket route
+	// WebSocket routes
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
+		webSocketService.HandleWebSocket(c)
+	}))
+	app.Get("/ws/events/live", websocket.New(func(c *websocket.Conn) {
 		webSocketService.HandleWebSocket(c)
 	}))
 
 	// Start WebSocket broadcast
 	go webSocketService.StartBroadcast()
-
-	// Start listening for notifications
-	// go notificationService.ListenForNotifications()
 
 	// Start server
 	port := os.Getenv("API_PORT")

@@ -13,17 +13,19 @@ import (
 )
 
 type AnalystController struct {
-	AnalystService *services.AnalystService
-	AuthService    *services.AuthService // si besoin de vérifier l'utilisateur
-	DB             *gorm.DB
+	AnalystService   *services.AnalystService
+	AuthService      *services.AuthService // si besoin de vérifier l'utilisateur
+	WebSocketService *services.WebSocketService
+	DB               *gorm.DB
 }
 
 // NewAnalystController retourne un nouveau contrôleur
-func NewAnalystController(analystService *services.AnalystService, authService *services.AuthService, db *gorm.DB) *AnalystController {
+func NewAnalystController(analystService *services.AnalystService, authService *services.AuthService, webSocketService *services.WebSocketService, db *gorm.DB) *AnalystController {
 	return &AnalystController{
-		AnalystService: analystService,
-		AuthService:    authService,
-		DB:             db,
+		AnalystService:   analystService,
+		AuthService:      authService,
+		WebSocketService: webSocketService,
+		DB:               db,
 	}
 }
 
@@ -73,6 +75,9 @@ func (ctrl *AnalystController) CreateEventHandler(c *fiber.Ctx) error {
 	if err := ctrl.AnalystService.CreateEvent(&event); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create event: " + err.Error()})
 	}
+
+	// Diffuser l'événement via WebSocket
+	go ctrl.WebSocketService.BroadcastEvent(event)
 
 	return c.Status(fiber.StatusCreated).JSON(event)
 }

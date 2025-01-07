@@ -100,11 +100,15 @@ func SetupRoutesAnalyst(app *fiber.App, controller *controllers.AnalystControlle
 	api := app.Group("/api/analyst")
 	api.Use(middlewares.JWTMiddleware)
 
+	// Routes HTTP pour les événements
 	api.Post("/events", controller.CreateEventHandler)
 	api.Get("/match/:match_id/events", controller.GetEventsByMatchHandler)
 	api.Get("/player/:player_id/events", controller.GetEventsByPlayerHandler)
 	api.Put("/events/:event_id", controller.UpdateEventHandler)
 	api.Delete("/events/:event_id", controller.DeleteEventHandler)
+
+	// Route WebSocket pour les événements en temps réel
+
 }
 
 // SetupRoutesFriend sets up the routes for managing friend requests.
