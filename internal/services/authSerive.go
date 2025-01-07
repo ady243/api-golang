@@ -96,6 +96,10 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 		return "", "", ErrInvalidCredentials
 	}
 
+	if !user.IsConfirmed {
+		return "", "", errors.New("account not confirmed")
+	}
+
 	userID, err := ulid.Parse(user.ID)
 	if err != nil {
 		return "", "", err
@@ -105,10 +109,6 @@ func (s *AuthService) Login(email, password string) (string, string, error) {
 		return "", "", err
 	}
 
-	userID, err = ulid.Parse(user.ID)
-	if err != nil {
-		return "", "", err
-	}
 	refreshToken, err := middlewares.GenerateRefreshToken(userID)
 	if err != nil {
 		return "", "", err
