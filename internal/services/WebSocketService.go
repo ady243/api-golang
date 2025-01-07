@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"log"
 	"sync"
 
@@ -13,6 +14,7 @@ type WebSocketService struct {
 	mutex       sync.Mutex
 }
 
+// NewWebSocketService initialise un nouveau service WebSocket
 func NewWebSocketService() *WebSocketService {
 	return &WebSocketService{
 		connections: make(map[*websocket.Conn]bool),
@@ -20,6 +22,7 @@ func NewWebSocketService() *WebSocketService {
 	}
 }
 
+// HandleWebSocket gère une nouvelle connexion WebSocket
 func (s *WebSocketService) HandleWebSocket(c *websocket.Conn) {
 	log.Println("Handling new WebSocket connection")
 	s.mutex.Lock()
@@ -47,6 +50,7 @@ func (s *WebSocketService) HandleWebSocket(c *websocket.Conn) {
 	}
 }
 
+// StartBroadcast diffuse les messages reçus à tous les clients connectés
 func (s *WebSocketService) StartBroadcast() {
 	for {
 		msg := <-s.broadcast
@@ -60,5 +64,26 @@ func (s *WebSocketService) StartBroadcast() {
 			}
 		}
 		s.mutex.Unlock()
+	}
+}
+
+// BroadcastEvent permet de diffuser un événement structuré (JSON) à tous les clients connectés
+func (s *WebSocketService) BroadcastEvent(event interface{}) {
+	message, err := json.Marshal(event)
+	if err != nil {
+		log.Println("Error marshalling event:", err)
+		return
+	}
+
+	log.Printf("Broadcasting event: %s", string(message))
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	for conn := range s.connections {
+		if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			log.Println("Error sending WebSocket message:", err)
+			conn.Close()
+			delete(s.connections, conn)
+		}
 	}
 }
