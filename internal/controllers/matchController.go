@@ -443,6 +443,14 @@ func (ctrl *MatchController) AddPlayerToMatchHandler(c *fiber.Ctx) error {
 	matchID := c.Params("id")
 	userID := c.Locals("user_id").(string)
 
+	match, err := ctrl.MatchService.GetMatchByID(matchID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
+	}
+	if match.OrganizerID == userID {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Organizer cannot join the match"})
+	}
+
 	// Vérifier si l'utilisateur est déjà dans le match
 	if err := ctrl.MatchService.IsUserInMatch(matchID, userID); err == nil {
 		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "User already in match"})
@@ -459,17 +467,12 @@ func (ctrl *MatchController) AddPlayerToMatchHandler(c *fiber.Ctx) error {
 	}
 
 	// Récupérer le token FCM de l'organisateur
-	var match models.Matches
-	if err := ctrl.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Match not found"})
-	}
-
 	var organizer models.Users
 	if err := ctrl.DB.Where("id = ?", match.OrganizerID).First(&organizer).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Organizer not found"})
 	}
 
-	err := ctrl.NotificationService.SendPushNotification(
+	err = ctrl.NotificationService.SendPushNotification(
 		organizer.FCMToken,
 		"TeamUp",
 		"Un Nouveau joueur a rejoint le match ! 🥳",
@@ -592,14 +595,16 @@ func (ctrl *MatchController) LeaveMatchHandler(c *fiber.Ctx) error {
 	matchID := c.Params("id")
 	userID := c.Locals("user_id").(string)
 
-	if err := ctrl.MatchService.LeaveMatch(matchID, userID); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	match, err := ctrl.MatchService.GetMatchByID(matchID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Match not found"})
+	}
+	if match.OrganizerID == userID {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Organizer cannot leave the match"})
 	}
 
-	// Récupérer les informations du match
-	var match models.Matches
-	if err := ctrl.DB.Where("id = ?", matchID).First(&match).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Match not found"})
+	if err := ctrl.MatchService.LeaveMatch(matchID, userID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	// Récupérer les informations de l'utilisateur qui quitte le match
