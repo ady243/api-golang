@@ -87,6 +87,11 @@ func Run() {
         AllowHeaders: "Origin, Content-Type, Accept, Authorization",
     }))
 
+    // Serve the assetlinks.json file
+    app.Get("/.well-known/assetlinks.json", func(c *fiber.Ctx) error {
+        return c.SendFile("./.well-known/assetlinks.json")
+    })
+
     // Apply rate limiter middleware to all routes except Swagger
     app.Use(func(c *fiber.Ctx) error {
         if c.Path() == "/swagger/*" {
