@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -247,4 +248,29 @@ func (ctrl *MatchPlayersController) DeleteMatchPlayerHandler(c *fiber.Ctx) error
 	}
 
 	return c.Status(fiber.StatusOK).JSON(map[string]interface{}{"message": "Player marked as removed from match"})
+}
+
+func (ctrl *MatchPlayersController) GetMatchesByPlayerIDHandler(c *fiber.Ctx) error {
+	playerID := c.Params("player_id")
+	if playerID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(map[string]interface{}{"error": "Player ID is required"})
+	}
+
+	// Récupérer les informations sur le joueur du match
+	matchPlayers, err := ctrl.MatchPlayersService.GetMatchesByPlayerID(playerID)
+	if err != nil {
+		fmt.Printf("Error retrieving matches for player %s: %v\n", playerID, err)
+		return c.Status(fiber.StatusNotFound).JSON(map[string]interface{}{"error": "Player not found in MatchPlayers"})
+	}
+
+	// Vérifier si des matches ont été trouvés
+	if len(matchPlayers) == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(map[string]interface{}{"error": "No matches found for this player"})
+	}
+
+	// Retourner les matches du joueur
+	return c.Status(fiber.StatusOK).JSON(map[string]interface{}{
+		"message": fmt.Sprintf("%d match(s) found with player ID", len(matchPlayers)),
+		"data":    matchPlayers,
+	})
 }

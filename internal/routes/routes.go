@@ -63,6 +63,7 @@ func SetupRoutesMatches(app *fiber.App, controller *controllers.MatchController)
 //   - POST /api/matchesPlayers/: Creates a new match player.
 //   - PUT /api/matchesPlayers/assignTeam: Assigns a team to a match player.
 //   - DELETE /api/matchesPlayers/:match_player_id: Deletes a match player.
+//   - GET /api/matchesPlayers/player/player_id: get match player by player.
 func SetupRoutesMatchePlayers(app *fiber.App, controller *controllers.MatchPlayersController) {
 	api := app.Group("/api/matchesPlayers")
 
@@ -72,6 +73,7 @@ func SetupRoutesMatchePlayers(app *fiber.App, controller *controllers.MatchPlaye
 	api.Post("/", controller.CreateMatchPlayerHandler)
 	api.Put("/assignTeam", controller.AssignTeamToPlayerHandler)
 	api.Delete("/:match_player_id", controller.DeleteMatchPlayerHandler)
+	api.Get("/player/:player_id", controller.GetMatchesByPlayerIDHandler)
 }
 
 // SetupChatRoutes sets up the routes for managing chat messages.
