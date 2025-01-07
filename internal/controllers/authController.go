@@ -49,16 +49,19 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	if len(req.Password) < 8 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Le mot de passe doit contenir au moins 8 caractères"})
+	}
+
 	if req.Role == "" {
 		req.Role = "Player"
 	}
 
 	userInfo := models.Users{
-		Username:     req.Username,
-		Email:        req.Email,
-		PasswordHash: req.Password,
-		Location:     req.Location,
-
+		Username:          req.Username,
+		Email:             req.Email,
+		PasswordHash:      req.Password,
+		Location:          req.Location,
 		ConfirmationToken: ulid.MustNew(ulid.Timestamp(time.Now()), ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)).String(),
 	}
 
