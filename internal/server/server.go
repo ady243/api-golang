@@ -76,7 +76,7 @@ func Run() {
 	friendChatController := controllers.NewFriendChatController(friendChatService, friendService, notificationService)
 	notificationController := controllers.NewNotificationController(notificationService)
 
-	// Configure Fiber app
+	// Configure Fiber app!
 	app := fiber.New()
 	app.Use(helmet.New())
 	app.Use(cors.New(cors.Config{
