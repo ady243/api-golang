@@ -256,21 +256,32 @@ func (ctrl *MatchPlayersController) GetMatchesByPlayerIDHandler(c *fiber.Ctx) er
 		return c.Status(fiber.StatusBadRequest).JSON(map[string]interface{}{"error": "Player ID is required"})
 	}
 
-	// Récupérer les informations sur le joueur du match
+	// Retrieve matches by player ID
 	matchPlayers, err := ctrl.MatchPlayersService.GetMatchesByPlayerID(playerID)
 	if err != nil {
 		fmt.Printf("Error retrieving matches for player %s: %v\n", playerID, err)
 		return c.Status(fiber.StatusNotFound).JSON(map[string]interface{}{"error": "Player not found in MatchPlayers"})
 	}
 
-	// Vérifier si des matches ont été trouvés
+	// Check if matches were found
 	if len(matchPlayers) == 0 {
 		return c.Status(fiber.StatusNotFound).JSON(map[string]interface{}{"error": "No matches found for this player"})
 	}
 
-	// Retourner les matches du joueur
+	// Retrieve match details for each match player
+	var matches []models.Matches
+	for _, matchPlayer := range matchPlayers {
+		var match models.Matches
+		if err := ctrl.DB.Where("id = ?", matchPlayer.MatchID).First(&match).Error; err != nil {
+			fmt.Printf("Error retrieving match details for match ID %s: %v\n", matchPlayer.MatchID, err)
+			continue
+		}
+		matches = append(matches, match)
+	}
+
+	// Return the matches
 	return c.Status(fiber.StatusOK).JSON(map[string]interface{}{
-		"message": fmt.Sprintf("%d match(s) found with player ID", len(matchPlayers)),
-		"data":    matchPlayers,
+		"message": fmt.Sprintf("%d match(s) found with player ID", len(matches)),
+		"data":    matches,
 	})
 }

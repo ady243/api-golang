@@ -70,7 +70,6 @@ func (s *MatchPlayersService) UpdateMatchPlayer(matchPlayer *models.MatchPlayers
 	return nil
 }
 
-// GetMatchesByPlayerID récupère les matchPlayers joués par playerID
 func (s *MatchPlayersService) GetMatchesByPlayerID(playerID string) ([]models.MatchPlayers, error) {
 	var matchPlayers []models.MatchPlayers
 	if err := s.DB.Where("player_id = ?", playerID).Find(&matchPlayers).Error; err != nil {
