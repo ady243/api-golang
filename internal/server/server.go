@@ -124,10 +124,11 @@ func Run() {
 
 	// WebSocket routes
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
-		webSocketService.HandleWebSocket(c)
+		webSocketService.HandleWebSocket(c, "general")
 	}))
-	app.Get("/ws/events/live", websocket.New(func(c *websocket.Conn) {
-		webSocketService.HandleWebSocket(c)
+	app.Get("/ws/events/live/:match_id", websocket.New(func(c *websocket.Conn) {
+		matchID := c.Params("match_id")
+		webSocketService.HandleWebSocket(c, matchID)
 	}))
 
 	// Start WebSocket broadcast

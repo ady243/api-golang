@@ -21,5 +21,7 @@ func (ctrl *WebSocketController) WebSocketHandler(c *websocket.Conn) {
 		log.Println("WebSocket connection closed")
 	}()
 
-	ctrl.service.HandleWebSocket(c)
+	matchID := c.Params("match_id")
+
+	ctrl.service.HandleWebSocket(c, matchID)
 }
