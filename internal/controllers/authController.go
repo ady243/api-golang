@@ -299,27 +299,26 @@ type LoginRequest struct {
 // @Failure 500 {object} map[string]interface{}
 // @Router /api/login [post]
 func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
-    var req struct {
-        Email    string `json:"email" binding:"required"`
-        Password string `json:"password" binding:"required"`
-        FCMToken string `json:"fcm_token"`
-    }
+	var req struct {
+		Email    string `json:"email" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
 
-    if err := c.BodyParser(&req); err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-    }
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    accessToken, refreshToken, err := ctrl.AuthService.Login(req.Email, req.Password, req.FCMToken)
-    if err != nil {
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
-    }
+	accessToken, refreshToken, err := ctrl.AuthService.Login(req.Email, req.Password)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    err = ctrl.AuthService.UpdateRefreshToken(req.Email, refreshToken)
-    if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-    }
+	err = ctrl.AuthService.UpdateRefreshToken(req.Email, refreshToken)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": accessToken, "refreshToken": refreshToken})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"accessToken": accessToken, "refreshToken": refreshToken})
 }
 
 // RefreshHandler gère la demande de rafraîchissement du token d'un utilisateur
@@ -413,6 +412,28 @@ func (ctrl *AuthController) GetPublicUserInfoHandler(c *fiber.Ctx) error {
 	return c.JSON(publicInfo)
 }
 
+// @Summary Attribuer le rôle d'arbitre à un joueur
+// @Description Attribuer le rôle d'arbitre à un joueur
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Param organizerID path string true "Organizer ID"
+// @Param playerID path string true "Player ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+func (ctrl *AuthController) AssignRefereeRole(c *fiber.Ctx) error {
+	organizerID := c.Params("organizerID")
+	playerID := c.Params("playerID")
+
+	err := ctrl.AuthService.AssignRefereeRole(organizerID, playerID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Role assigned successfully"})
+}
+
 // @Summary Mettre à jour les statistiques d'un joueur
 // @Description Mettre à jour les statistiques d'un joueur
 // @Tags Auth
@@ -466,6 +487,3 @@ func (ctrl *AuthController) DeleteUserHandler(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Utilisateur supprimé avec succès"})
 }
-
-
-

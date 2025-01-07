@@ -68,7 +68,7 @@ func (ctrl *ChatController) SendMessage(c *fiber.Ctx) error {
 			err := ctrl.NotificationService.SendPushNotification(
 				participant.FCMToken,
 				"TeamUp",
-				"Vous avez reçu un nouveau message dans votre match 😶",
+				"Vous avez reçu un nouveau message dans votre match ",
 			)
 			if err != nil {
 				log.Printf("Failed to send push notification: %v", err)
