@@ -97,7 +97,7 @@ func SetupOpenAiRoutes(app *fiber.App, controller *controllers.OpenAiController)
 
 // SetupRoutesAnalyst sets up the routes for managing Analyst events.
 func SetupRoutesAnalyst(app *fiber.App, controller *controllers.AnalystController) {
-	app.Get("/ws/events/live/:match_id", websocket.New(controller.WebSocketHandler))
+	api.Get("/ws/events/live/:match_id", websocket.New(controller.WebSocketHandler))
 	api := app.Group("/api/analyst")
 	api.Use(middlewares.JWTMiddleware)
 
@@ -106,6 +106,7 @@ func SetupRoutesAnalyst(app *fiber.App, controller *controllers.AnalystControlle
 	api.Get("/player/:player_id/events", controller.GetEventsByPlayerHandler)
 	api.Put("/events/:event_id", controller.UpdateEventHandler)
 	api.Delete("/events/:event_id", controller.DeleteEventHandler)
+	api.Get("/ws/events/live/:match_id", websocket.New(controller.WebSocketHandler))
 }
 
 // SetupRoutesFriend sets up the routes for managing friend requests.
