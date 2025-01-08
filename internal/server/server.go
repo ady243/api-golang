@@ -124,12 +124,15 @@ func Run() {
 
 	// WebSocket routes
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
-		webSocketService.HandleWebSocket(c)
-	}))
-	app.Get("/ws/events/live", websocket.New(func(c *websocket.Conn) {
-		webSocketService.HandleWebSocket(c)
+		log.Println("WebSocket connection established on /ws")
+		webSocketService.HandleWebSocket(c, "general")
 	}))
 
+	app.Get("/ws/events/live/:match_id", websocket.New(func(c *websocket.Conn) {
+		matchID := c.Params("match_id")
+		log.Printf("WebSocket connection established on /ws/events/live/%s", matchID)
+		webSocketService.HandleWebSocket(c, matchID)
+	}))
 	// Start WebSocket broadcast
 	go webSocketService.StartBroadcast()
 
