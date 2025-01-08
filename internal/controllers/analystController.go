@@ -1,168 +1,172 @@
 package controllers
 
 import (
-    "math/rand"
-    "time"
+	"math/rand"
+	"time"
 
-    "github.com/gofiber/fiber/v2"
-    "github.com/gofiber/websocket/v2"
-    "github.com/oklog/ulid/v2"
-    "gorm.io/gorm"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
+	"github.com/oklog/ulid/v2"
+	"gorm.io/gorm"
 
-    "github.com/ady243/teamup/internal/models"
-    "github.com/ady243/teamup/internal/services"
+	"github.com/ady243/teamup/internal/models"
+	"github.com/ady243/teamup/internal/services"
 )
 
 type AnalystController struct {
-    AnalystService   *services.AnalystService
-    AuthService      *services.AuthService
-    WebSocketService *services.WebSocketService
-    DB               *gorm.DB
+	AnalystService   *services.AnalystService
+	AuthService      *services.AuthService
+	WebSocketService *services.WebSocketService
+	DB               *gorm.DB
 }
 
 // NewAnalystController retourne un nouveau contrôleur
 func NewAnalystController(analystService *services.AnalystService, authService *services.AuthService, webSocketService *services.WebSocketService, db *gorm.DB) *AnalystController {
-    return &AnalystController{
-        AnalystService:   analystService,
-        AuthService:      authService,
-        WebSocketService: webSocketService,
-        DB:               db,
-    }
+	return &AnalystController{
+		AnalystService:   analystService,
+		AuthService:      authService,
+		WebSocketService: webSocketService,
+		DB:               db,
+	}
 }
 
 // WebSocketHandler gère les connexions WebSocket pour un match spécifique
 func (ctrl *AnalystController) WebSocketHandler(c *websocket.Conn) {
-    matchID := c.Params("match_id")
-    ctrl.WebSocketService.HandleWebSocket(c, matchID)
+	matchID := c.Params("match_id")
+	ctrl.WebSocketService.HandleWebSocket(c, matchID)
 }
 
 // CreateEventHandler crée un nouvel événement (ex: but, carton, etc.)
 func (ctrl *AnalystController) CreateEventHandler(c *fiber.Ctx) error {
-    var req struct {
-        MatchID   string `json:"match_id" binding:"required"`
-        AnalystID string `json:"analyst_id" binding:"required"`
-        PlayerID  string `json:"player_id" binding:"required"`
-        EventType string `json:"event_type" binding:"required"`
-        Minute    int    `json:"minute"`
-    }
+	var req struct {
+		MatchID   string `json:"match_id" binding:"required"`
+		AnalystID string `json:"analyst_id" binding:"required"`
+		PlayerID  string `json:"player_id" binding:"required"`
+		EventType string `json:"event_type" binding:"required"`
+		Minute    int    `json:"minute"`
+	}
 
-    if err := c.BodyParser(&req); err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request format"})
-    }
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request format"})
+	}
 
-    // Vérifier si les ULID sont valides (si vous utilisez ULID pour vos IDs)
-    matchID, err := ulid.Parse(req.MatchID)
-    if err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID format"})
-    }
-    analystID, err := ulid.Parse(req.AnalystID)
-    if err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid analyst ID format"})
-    }
-    playerID, err := ulid.Parse(req.PlayerID)
-    if err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid player ID format"})
-    }
+	// Vérifier si les ULID sont valides (si vous utilisez ULID pour vos IDs)
+	matchID, err := ulid.Parse(req.MatchID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid match ID format"})
+	}
+	analystID, err := ulid.Parse(req.AnalystID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid analyst ID format"})
+	}
+	playerID, err := ulid.Parse(req.PlayerID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid player ID format"})
+	}
 
-    // Générer un nouvel ID pour l'événement
-    t := time.Now()
-    entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
-    eventID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
+	// Générer un nouvel ID pour l'événement
+	t := time.Now()
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	eventID := ulid.MustNew(ulid.Timestamp(t), entropy).String()
 
-    event := models.Analyst{
-        ID:        eventID,
-        MatchID:   matchID.String(),
-        AnalystID: analystID.String(),
-        PlayerID:  playerID.String(),
-        EventType: req.EventType,
-        Minute:    req.Minute,
-    }
+	event := models.Analyst{
+		ID:        eventID,
+		MatchID:   matchID.String(),
+		AnalystID: analystID.String(),
+		PlayerID:  playerID.String(),
+		EventType: req.EventType,
+		Minute:    req.Minute,
+	}
 
-    // Sauvegarde en base de l'événement
-    if err := ctrl.AnalystService.CreateEvent(&event); err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create event: " + err.Error()})
-    }
+	// Sauvegarde en base de l'événement
+	if err := ctrl.AnalystService.CreateEvent(&event); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not create event: " + err.Error()})
+	}
 
-    // Diffuser l'événement via WebSocket pour le match spécifique
-    go ctrl.WebSocketService.BroadcastEventToMatch(matchID.String(), event)
+	// Diffuser l'événement via WebSocket pour le match spécifique
+	go ctrl.WebSocketService.BroadcastEventToMatch(matchID.String(), event)
 
-    return c.Status(fiber.StatusCreated).JSON(event)
+	return c.Status(fiber.StatusCreated).JSON(event)
 }
 
 // GetEventsByMatchHandler renvoie tous les événements d'un match
 func (ctrl *AnalystController) GetEventsByMatchHandler(c *fiber.Ctx) error {
-    matchID := c.Params("match_id")
+	matchID := c.Params("match_id")
 
-    // Vérifier l'existence du match (optionnel, selon votre logique)
-    events, err := ctrl.AnalystService.GetEventsByMatchID(matchID)
-    if err != nil {
-        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "No events found for match ID: " + matchID})
-    }
+	// Quand il n'y a pas de event sur un match, on retournais une reponse 404 et Dio prenais ça pour un problème
+	// c'est pour cette raison qu'ici on retourne un 200 avec liste vide
+	events, err := ctrl.AnalystService.GetEventsByMatchID(matchID)
+	if err != nil {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"events":  []interface{}{},
+			"message": "No events found for match ID: " + matchID,
+		})
+	}
 
-    return c.JSON(fiber.Map{"events": events})
+	return c.JSON(fiber.Map{"events": events})
 }
 
 // GetEventsByPlayerHandler renvoie tous les événements pour un joueur donné
 func (ctrl *AnalystController) GetEventsByPlayerHandler(c *fiber.Ctx) error {
-    playerID := c.Params("player_id")
+	playerID := c.Params("player_id")
 
-    events, err := ctrl.AnalystService.GetEventsByPlayerID(playerID)
-    if err != nil {
-        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
-    }
+	events, err := ctrl.AnalystService.GetEventsByPlayerID(playerID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    return c.JSON(fiber.Map{"events": events})
+	return c.JSON(fiber.Map{"events": events})
 }
 
 // UpdateEventHandler met à jour un événement (par ex. changer le type ou la minute)
 func (ctrl *AnalystController) UpdateEventHandler(c *fiber.Ctx) error {
-    eventID := c.Params("event_id")
+	eventID := c.Params("event_id")
 
-    var req struct {
-        EventType *string `json:"event_type"`
-        Minute    *int    `json:"minute"`
-    }
-    if err := c.BodyParser(&req); err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-    }
+	var req struct {
+		EventType *string `json:"event_type"`
+		Minute    *int    `json:"minute"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    // Récupérer l'event existant
-    event, err := ctrl.AnalystService.GetEventByID(eventID)
-    if err != nil {
-        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Event not found"})
-    }
+	// Récupérer l'event existant
+	event, err := ctrl.AnalystService.GetEventByID(eventID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Event not found"})
+	}
 
-    // Appliquer les modifications
-    if req.EventType != nil {
-        event.EventType = *req.EventType
-    }
-    if req.Minute != nil {
-        event.Minute = *req.Minute
-    }
+	// Appliquer les modifications
+	if req.EventType != nil {
+		event.EventType = *req.EventType
+	}
+	if req.Minute != nil {
+		event.Minute = *req.Minute
+	}
 
-    // Sauvegarder
-    if err := ctrl.AnalystService.UpdateEvent(event); err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-    }
+	// Sauvegarder
+	if err := ctrl.AnalystService.UpdateEvent(event); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    return c.JSON(event)
+	return c.JSON(event)
 }
 
 // DeleteEventHandler supprime un événement (soft delete => on remplit DeletedAt)
 func (ctrl *AnalystController) DeleteEventHandler(c *fiber.Ctx) error {
-    eventID := c.Params("event_id")
+	eventID := c.Params("event_id")
 
-    event, err := ctrl.AnalystService.GetEventByID(eventID)
-    if err != nil {
-        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Event not found"})
-    }
+	event, err := ctrl.AnalystService.GetEventByID(eventID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Event not found"})
+	}
 
-    now := time.Now()
-    event.DeletedAt = &now
+	now := time.Now()
+	event.DeletedAt = &now
 
-    if err := ctrl.AnalystService.UpdateEvent(event); err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-    }
+	if err := ctrl.AnalystService.UpdateEvent(event); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
 
-    return c.JSON(fiber.Map{"message": "Event marked as deleted"})
+	return c.JSON(fiber.Map{"message": "Event marked as deleted"})
 }
