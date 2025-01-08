@@ -1,17 +1,17 @@
 package internal
 
 import (
-	"context"
-	"log"
+    "context"
+    "log"
 
-	firebase "firebase.google.com/go"
-	"google.golang.org/api/option"
+    firebase "firebase.google.com/go"
+    "google.golang.org/api/option"
 )
 
 var app *firebase.App
 
 func InitializeFirebase() (*firebase.App, error) {
-	credentials := `{
+    credentials := `{
         "type": "service_account",
         "project_id": "notification-push-40d24",
         "private_key_id": "682d928919bc8404e0313cb1067163f05aec4fd7",
@@ -25,17 +25,17 @@ func InitializeFirebase() (*firebase.App, error) {
         "universe_domain": "googleapis.com"
     }`
 
-	opt := option.WithCredentialsJSON([]byte(credentials))
-	var err error
-	app, err = firebase.NewApp(context.Background(), &firebase.Config{
-		ProjectID: "notification-push-40d24",
-	}, opt)
-	if err != nil {
-		log.Fatalf("erreur lors de l'initialisation de l'application: %v", err)
-	}
-	return app, nil
+    opt := option.WithCredentialsJSON([]byte(credentials))
+    var err error
+    app, err = firebase.NewApp(context.Background(), &firebase.Config{
+        ProjectID: "notification-push-40d24",
+    }, opt)
+    if err != nil {
+        log.Fatalf("erreur lors de l'initialisation de l'application: %v", err)
+    }
+    return app, nil
 }
 
 func GetFirebaseApp() *firebase.App {
-	return app
+    return app
 }

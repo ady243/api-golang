@@ -3,7 +3,7 @@
       "relation": ["delegate_permission/common.handle_all_urls"],
       "target": {
         "namespace": "android_app",
-        "package_name": "com.example.teamup",
+        "package_name": "com.teamup.app",
         "sha256_cert_fingerprints": [
           "32:0C:97:76:F1:52:51:8A:C3:C7:86:9B:E6:D9:AB:B4:56:1A:EC:FB:A8:8A:00:BD:07:55:76:41:EC:A7:E4:11"
         ]
