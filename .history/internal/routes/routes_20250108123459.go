@@ -104,7 +104,7 @@ func SetupRoutesAnalyst(app *fiber.App, controller *controllers.AnalystControlle
 	api.Get("/match/:match_id/events", controller.GetEventsByMatchHandler)
 	api.Get("/player/:player_id/events", controller.GetEventsByPlayerHandler)
 	api.Put("/events/:event_id", controller.UpdateEventHandler)
-	api.Delete("/events/:event_id", controller.DeleteEventHandler)
+	api.Delete("/events/:event_id", controller.DeleteEventHandler)  
 	api.Get("/ws/events/live/:match_id", websocket.New(controller.WebSocketHandler))
 }
 
@@ -136,6 +136,7 @@ func SetupRoutesWebSocket(app *fiber.App, controller *controllers.WebSocketContr
 
 func SetupNotificationRoutes(app *fiber.App, notificationController *controllers.NotificationController) {
 	api := app.Group("/api")
+	api.Post("/send-notification", notificationController.SendPushNotification)
 	api.Get("/notifications/:token", notificationController.GetUnreadNotifications)
 	api.Post("/notifications/:token/read", notificationController.MarkNotificationsAsRead)
 	api.Post("/send-notification", notificationController.SendPushNotification)
