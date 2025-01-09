@@ -372,6 +372,3 @@ func (s *AuthService) DeleteUserAndRelatedData(userID string) error {
 }
 
 
-func (s *AuthService) UpdateFCMToken(email, fcmToken string) error {
-    return s.DB.Model(&models.Users{}).Where("email = ?", email).Update("fcm_token", fcmToken).Error
-}

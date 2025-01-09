@@ -43,14 +43,7 @@ func NewAuthController(authService *services.AuthService, imageService *services
 // @Failure 500 {object} map[string]interface{}
 // @Router /api/register [post]
 func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
-	var req struct {
-		Username string `json:"username" binding:"required"`
-		Email    string `json:"email" binding:"required"`
-		Password string `json:"password" binding:"required"`
-		Location string `json:"location"`
-		Role     string `json:"role"`
-		FCMToken string `json:"fcm_token"`
-	}
+	var req RegisterRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -70,7 +63,6 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 		PasswordHash:      req.Password,
 		Location:          req.Location,
 		ConfirmationToken: ulid.MustNew(ulid.Timestamp(time.Now()), ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)).String(),
-		FCMToken:          req.FCMToken,
 	}
 
 	user, err := ctrl.AuthService.RegisterUser(userInfo)

@@ -43,14 +43,7 @@ func NewAuthController(authService *services.AuthService, imageService *services
 // @Failure 500 {object} map[string]interface{}
 // @Router /api/register [post]
 func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
-	var req struct {
-		Username string `json:"username" binding:"required"`
-		Email    string `json:"email" binding:"required"`
-		Password string `json:"password" binding:"required"`
-		Location string `json:"location"`
-		Role     string `json:"role"`
-		FCMToken string `json:"fcm_token"`
-	}
+	var req RegisterRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -70,7 +63,6 @@ func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
 		PasswordHash:      req.Password,
 		Location:          req.Location,
 		ConfirmationToken: ulid.MustNew(ulid.Timestamp(time.Now()), ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)).String(),
-		FCMToken:          req.FCMToken,
 	}
 
 	user, err := ctrl.AuthService.RegisterUser(userInfo)
@@ -313,7 +305,6 @@ func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
 	var req struct {
 		Email    string `json:"email" binding:"required"`
 		Password string `json:"password" binding:"required"`
-		FCMToken string `json:"fcm_token"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -326,12 +317,6 @@ func (ctrl *AuthController) LoginHandler(c *fiber.Ctx) error {
 	}
 
 	err = ctrl.AuthService.UpdateRefreshToken(req.Email, refreshToken)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	// Update the FCM token
-	err = ctrl.AuthService.UpdateFCMToken(req.Email, req.FCMToken)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}

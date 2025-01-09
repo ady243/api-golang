@@ -43,48 +43,48 @@ func NewAuthController(authService *services.AuthService, imageService *services
 // @Failure 500 {object} map[string]interface{}
 // @Router /api/register [post]
 func (ctrl *AuthController) RegisterHandler(c *fiber.Ctx) error {
-	var req struct {
-		Username string `json:"username" binding:"required"`
-		Email    string `json:"email" binding:"required"`
-		Password string `json:"password" binding:"required"`
-		Location string `json:"location"`
-		Role     string `json:"role"`
-		FCMToken string `json:"fcm_token"`
-	}
+    var req struct {
+        Username string `json:"username" binding:"required"`
+        Email    string `json:"email" binding:"required"`
+        Password string `json:"password" binding:"required"`
+        Location string `json:"location"`
+        Role     string `json:"role"`
+        FCMToken string `json:"fcm_token"`
+    }
 
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
+    if err := c.BodyParser(&req); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	if len(req.Password) < 8 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Le mot de passe doit contenir au moins 8 caractères"})
-	}
+    if len(req.Password) < 8 {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Le mot de passe doit contenir au moins 8 caractères"})
+    }
 
-	if req.Role == "" {
-		req.Role = "Player"
-	}
+    if req.Role == "" {
+        req.Role = "Player"
+    }
 
-	userInfo := models.Users{
-		Username:          req.Username,
-		Email:             req.Email,
-		PasswordHash:      req.Password,
-		Location:          req.Location,
-		ConfirmationToken: ulid.MustNew(ulid.Timestamp(time.Now()), ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)).String(),
-		FCMToken:          req.FCMToken,
-	}
+    userInfo := models.Users{
+        Username:          req.Username,
+        Email:             req.Email,
+        PasswordHash:      req.Password,
+        Location:          req.Location,
+        ConfirmationToken: ulid.MustNew(ulid.Timestamp(time.Now()), ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)).String(),
+        FCMToken:          req.FCMToken,
+    }
 
-	user, err := ctrl.AuthService.RegisterUser(userInfo)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
+    user, err := ctrl.AuthService.RegisterUser(userInfo)
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+    }
 
-	// Envoyer un email de confirmation
-	err = ctrl.AuthService.EmailService.SendConfirmationEmail(user.Email, user.ConfirmationToken)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to send confirmation email"})
-	}
+    // Envoyer un email de confirmation
+    err = ctrl.AuthService.EmailService.SendConfirmationEmail(user.Email, user.ConfirmationToken)
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to send confirmation email"})
+    }
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Inscription réussie, veuillez vérifier votre email pour confirmer votre compte"})
+    return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Inscription réussie, veuillez vérifier votre email pour confirmer votre compte"})
 }
 
 // RegisterRequest représente le corps de la requête d'inscription
