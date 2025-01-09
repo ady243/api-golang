@@ -281,7 +281,7 @@ func (ctrl *MatchPlayersController) GetMatchesByPlayerIDHandler(c *fiber.Ctx) er
 
 	// Return the matches
 	return c.Status(fiber.StatusOK).JSON(map[string]interface{}{
-		"message": fmt.Sprintf("%d match(s) found with player ID", len(matches)),
-		"data":    matches,
+		"match_count": len(matches),
+		"data":        matches,
 	})
 }
