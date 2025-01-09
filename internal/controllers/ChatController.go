@@ -41,9 +41,10 @@ func NewChatController(chatService *services.ChatService, notificationService *s
 // @Router /api/chat/send [post]
 func (ctrl *ChatController) SendMessage(c *fiber.Ctx) error {
 	var req struct {
-		MatchID string `json:"match_id" binding:"required"`
-		UserID  string `json:"user_id" binding:"required"`
-		Message string `json:"message" binding:"required"`
+		MatchID  string `json:"match_id" binding:"required"`
+		UserID   string `json:"user_id" binding:"required"`
+		Message  string `json:"message" binding:"required"`
+		FCMToken string `json:"fcm_token" binding:"required"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {
@@ -62,21 +63,17 @@ func (ctrl *ChatController) SendMessage(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: "Could not fetch participants"})
 	}
 
-	// Envoyer une notification push aux participants
+	// Envoi de la notification push à chaque participant
 	for _, participant := range participants {
-		if participant.ID != req.UserID {
-			err := ctrl.NotificationService.SendPushNotification(
-				participant.FCMToken,
-				"TeamUp",
-				"Vous avez reçu un nouveau message dans votre match ",
-			)
-			if err != nil {
-				log.Printf("Failed to send push notification: %v", err)
+		if participant.FCMToken != "" {
+			if err := ctrl.NotificationService.SendPushNotification(participant.FCMToken, "Nouveau message", req.Message); err != nil {
+				log.Printf("Error sending push notification: %v", err)
+				return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: "Failed to send push notification"})
 			}
 		}
 	}
 
-	return c.Status(fiber.StatusOK).JSON(SuccessResponse{Status: "Message sent"})
+	return c.JSON(SuccessResponse{Status: "Message sent successfully"})
 }
 
 // @Summary GetMessages
