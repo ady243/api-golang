@@ -50,6 +50,17 @@ func (s *MatchService) CreateMatch(match *models.Matches, userID string) error {
 	if err := s.DB.Create(match).Error; err != nil {
 		return err
 	}
+
+	// Ajouter l'utilisateur comme joueur dans la table match_players
+	matchPlayer := &models.MatchPlayers{
+		ID:       ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String(),
+		MatchID:  match.ID,
+		PlayerID: userID,
+	}
+	if err := s.DB.Create(matchPlayer).Error; err != nil {
+		return fmt.Errorf("failed to add organizer to match players: %w", err)
+	}
+
 	return nil
 }
 
