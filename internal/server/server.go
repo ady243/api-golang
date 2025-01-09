@@ -35,7 +35,7 @@ func Run() {
 	}
 
 	// Table migration
-	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}, &models.FriendRequest{}, &models.Message{}); err != nil {
+	if err := db.AutoMigrate(&models.Users{}, &models.Matches{}, &models.MatchPlayers{}, &models.FriendRequest{}, &models.Message{}, &models.Analyst{}); err != nil {
 		log.Printf("Error migrating database: %v", err)
 	}
 

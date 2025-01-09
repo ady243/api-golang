@@ -41,9 +41,10 @@ func NewChatController(chatService *services.ChatService, notificationService *s
 // @Router /api/chat/send [post]
 func (ctrl *ChatController) SendMessage(c *fiber.Ctx) error {
 	var req struct {
-		MatchID string `json:"match_id" binding:"required"`
-		UserID  string `json:"user_id" binding:"required"`
-		Message string `json:"message" binding:"required"`
+		MatchID  string `json:"match_id" binding:"required"`
+		UserID   string `json:"user_id" binding:"required"`
+		Message  string `json:"message" binding:"required"`
+		FCMToken string `json:"fcm_token" binding:"required"`
 	}
 
 	if err := c.BodyParser(&req); err != nil {

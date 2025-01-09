@@ -26,6 +26,7 @@ func (cc *FriendChatController) SendMessage(c *fiber.Ctx) error {
         SenderID   string `json:"sender_id"`
         ReceiverID string `json:"receiver_id"`
         Content    string `json:"content"`
+        FCMToken   string `json:"fcm_token"` // Ajout du champ FCMToken
     }
     if err := c.BodyParser(&request); err != nil {
         log.Printf("Error parsing request body: %v", err)
@@ -65,6 +66,16 @@ func (cc *FriendChatController) SendMessage(c *fiber.Ctx) error {
         return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
             "error": err.Error(),
         })
+    }
+
+    // Envoi de la notification push
+    if request.FCMToken != "" {
+        if err := cc.NotificationService.SendPushNotification(request.FCMToken, "Nouveau message", request.Content); err != nil {
+            log.Printf("Error sending push notification: %v", err)
+            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+                "error": "failed to send push notification",
+            })
+        }
     }
 
     return c.JSON(fiber.Map{
