@@ -65,7 +65,7 @@ func (fc *FriendController) SendFriendRequest(c *fiber.Ctx) error {
 	err := fc.NotificationService.SendPushNotification(
 		receiver.FCMToken,
 		"TeamUp rélation",
-		"Vous avez reçu une nouvelle demande d'ami de "+receiver.Username,
+		"Vous avez reçu une nouvelle demande d'ami",
 	)
 	if err != nil {
 		log.Printf("Failed to send push notification: %v", err)
@@ -99,23 +99,12 @@ func (fc *FriendController) AcceptFriendRequest(c *fiber.Ctx) error {
 		})
 	}
 
-	// Récupérer le token FCM de l'expéditeur
 	var sender models.Users
 	if err := fc.FriendService.DB.Where("id = ?", request.SenderId).First(&sender).Error; err != nil {
 		log.Printf("Failed to fetch sender: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Sender not found",
 		})
-	}
-
-	// Envoyer une notification push à l'expéditeur
-	err := fc.NotificationService.SendPushNotification(
-		sender.FCMToken,
-		"TeamUp rélation",
-		"Votre demande d'ami a été acceptée par "+sender.Username,
-	)
-	if err != nil {
-		log.Printf("Failed to send push notification: %v", err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -147,16 +136,6 @@ func (fc *FriendController) DeclineFriendRequest(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Sender not found",
 		})
-	}
-
-	// Envoyer une notification push à l'expéditeur
-	err := fc.NotificationService.SendPushNotification(
-		sender.FCMToken,
-		"TeamUp rélation",
-		"Votre demande d'ami a été refusée par "+sender.Username,
-	)
-	if err != nil {
-		log.Printf("Failed to send push notification: %v", err)
 	}
 
 	return c.JSON(fiber.Map{
