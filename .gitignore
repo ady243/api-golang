@@ -59,7 +59,3 @@ Dockerfile
 go.mod
 
 
-
-.env
-
-./env
