@@ -1,15 +1,11 @@
 package controllers
 
 import (
-    "context"
-    "encoding/json"
     "log"
-    "time"
 
     "github.com/ady243/teamup/internal/services"
     "github.com/gofiber/fiber/v2"
     "github.com/gofiber/websocket/v2"
-    "github.com/go-redis/redis/v8"
 )
 
 type ErrorResponse struct {
@@ -23,14 +19,12 @@ type SuccessResponse struct {
 type ChatController struct {
     ChatService         *services.ChatService
     NotificationService *services.NotificationService
-    RedisClient         *redis.Client
 }
 
-func NewChatController(chatService *services.ChatService, notificationService *services.NotificationService, redisClient *redis.Client) *ChatController {
+func NewChatController(chatService *services.ChatService, notificationService *services.NotificationService) *ChatController {
     return &ChatController{
         ChatService:         chatService,
         NotificationService: notificationService,
-        RedisClient:         redisClient,
     }
 }
 
@@ -61,6 +55,23 @@ func (ctrl *ChatController) SendMessage(c *fiber.Ctx) error {
     if err := ctrl.ChatService.AddMessage(req.MatchID, req.UserID, req.Message); err != nil {
         log.Printf("Error saving message: %v", err)
         return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: "Could not save message"})
+    }
+
+    // Récupérer les tokens FCM des participants
+    participants, err := ctrl.ChatService.GetParticipants(req.MatchID)
+    if err != nil {
+        log.Printf("Error fetching participants: %v", err)
+        return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: "Could not fetch participants"})
+    }
+
+    // Envoi de la notification push à chaque participant
+    for _, participant := range participants {
+        if participant.FCMToken != "" {
+            if err := ctrl.NotificationService.SendPushNotification(participant.FCMToken, "Nouveau message", req.Message); err != nil {
+                log.Printf("Error sending push notification: %v", err)
+                return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: "Failed to send push notification"})
+            }
+        }
     }
 
     return c.JSON(SuccessResponse{Status: "Message sent successfully"})
@@ -100,8 +111,6 @@ func (ctrl *ChatController) ChatWebSocketHandler(c *websocket.Conn) {
     matchID := c.Params("matchID")
     userID := c.Locals("user_id").(string)
 
-    log.Printf("Handling new WebSocket connection for match: %s", matchID)
-
     // Vérifier si l'utilisateur est dans le match
     if err := ctrl.ChatService.IsUserInMatch(matchID, userID); err != nil {
         c.Close()
@@ -132,7 +141,7 @@ func (ctrl *ChatController) ChatWebSocketHandler(c *websocket.Conn) {
     for {
         _, message, err := c.ReadMessage()
         if err != nil {
-            log.Printf("Error reading WebSocket message: %v", err)
+            log.Printf("Erreur de lecture de message WebSocket : %v", err)
             break
         }
 
@@ -148,6 +157,4 @@ func (ctrl *ChatController) ChatWebSocketHandler(c *websocket.Conn) {
         ctrl.RedisClient.Set(ctx, "chat:"+matchID+":"+userID, msgJSON, time.Hour*24*7)
         ctrl.RedisClient.Publish(ctx, room, string(msgJSON))
     }
-
-    log.Printf("WebSocket connection closed for match: %s", matchID)
 }

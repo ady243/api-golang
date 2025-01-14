@@ -89,6 +89,8 @@ func (s *ChatService) AddUserToChat(matchID, userID string) error {
     return nil
 }
 
+
+//delete chat messages
 func (s *ChatService) DeleteChatMessages(matchID string) error {
     ctx := context.Background()
     key := "chat:" + matchID
@@ -100,6 +102,7 @@ func (s *ChatService) DeleteChatMessages(matchID string) error {
     return nil
 }
 
+
 func (s *ChatService) GetParticipants(matchID string) ([]models.Users, error) {
     var participants []models.Users
     if err := s.DB.Joins("JOIN match_players ON match_players.player_id = users.id").
@@ -108,12 +111,4 @@ func (s *ChatService) GetParticipants(matchID string) ([]models.Users, error) {
         return nil, err
     }
     return participants, nil
-}
-
-func (s *ChatService) IsUserInMatch(matchID, userID string) error {
-    var matchPlayer models.MatchPlayers
-    if err := s.DB.First(&matchPlayer, "match_id = ? AND player_id = ?", matchID, userID).Error; err != nil {
-        return errors.New("user not in match")
-    }
-    return nil
 }

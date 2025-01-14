@@ -9,7 +9,6 @@ import (
     "github.com/ady243/teamup/internal/services"
     "github.com/gofiber/fiber/v2"
     "github.com/gofiber/websocket/v2"
-    "github.com/go-redis/redis/v8"
 )
 
 type ErrorResponse struct {
@@ -23,14 +22,12 @@ type SuccessResponse struct {
 type ChatController struct {
     ChatService         *services.ChatService
     NotificationService *services.NotificationService
-    RedisClient         *redis.Client
 }
 
-func NewChatController(chatService *services.ChatService, notificationService *services.NotificationService, redisClient *redis.Client) *ChatController {
+func NewChatController(chatService *services.ChatService, notificationService *services.NotificationService) *ChatController {
     return &ChatController{
         ChatService:         chatService,
         NotificationService: notificationService,
-        RedisClient:         redisClient,
     }
 }
 
