@@ -26,7 +26,7 @@ func (cc *FriendChatController) SendMessage(c *fiber.Ctx) error {
         SenderID   string `json:"sender_id"`
         ReceiverID string `json:"receiver_id"`
         Content    string `json:"content"`
-        FCMToken   string `json:"fcm_token"` // Ajout du champ FCMToken
+        FCMToken   string `json:"fcm_token"` 
     }
     if err := c.BodyParser(&request); err != nil {
         log.Printf("Error parsing request body: %v", err)
