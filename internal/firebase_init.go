@@ -38,5 +38,6 @@ func InitializeFirebase() (*firebase.App, error) {
 }
 
 func GetFirebaseApp() *firebase.App {
+	InitializeFirebase()
 	return app
 }
