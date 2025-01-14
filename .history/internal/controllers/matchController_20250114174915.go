@@ -604,5 +604,16 @@ func (ctrl *MatchController) LeaveMatchHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "User not found"})
 	}
 
+	// Récupérer les participants du match
+	participants, err := ctrl.MatchPlayersService.GetMatchPlayersByMatchID(matchID)
+	if err != nil {
+		log.Printf("Error fetching participants: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not fetch participants"})
+	}
+
+	// Envoyer une notification push aux participants
+	const data = participants
+	log.Printf("Sending push notification to participants: %v", data)
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Successfully left the match"})
 }
