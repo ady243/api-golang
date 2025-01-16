@@ -30,7 +30,7 @@ func GenerateToken(userID ulid.ULID) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
+	                ExpiresAt: time.Now().Add(time.Hour * 24 * 30).Unix(),
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
